@@ -61,3 +61,17 @@ t
 Dapp/src/main/java/com/panosdim/flatman/ui/adapters/BalanceAdapter.kt,6\8\6897c6c9fbfb984a18edf8863b417535cde35156
 v
 Fapp/src/main/java/com/panosdim/flatman/ui/fragments/BalanceFragment.kt,4\0\4072667eeab06e1062bd7bfd44e7436304478007
+7
+LICENSE,0\3\0398ccd0f49298b10a3d76a47800d2ebecd49859
+>
+app/.gitignore,5\1\51e1c5d383dfaa35e0e7e5873a0a99355a86880f
+9
+	README.md,8\e\8ec9a00bfd09b3190ac6b22251dbb1aa95a0579d
+@
+local.properties,0\7\0712df971a99ac4d2fccb8e0fb19f377f3374cca
+?
+settings.gradle,0\5\05efc8b1657769a27696d478ded1e95f38737233
+A
+gradle.properties,2\a\2afbb999f001938c88fa43fc2ef52abf0f8213e4
+X
+(gradle/wrapper/gradle-wrapper.properties,f\b\fbe448ebfc3eb2d4e308f6b8b043666f5b57235e

@@ -1,0 +1,47 @@
+<resources>
+    <string name="app_name">FlatMan</string>
+    <!-- Strings related to login -->
+    <string name="prompt_email">Email</string>
+    <string name="prompt_password">Password</string>
+    <string name="action_sign_in">Sign in</string>
+    <string name="action_sign_in_short">Sign in</string>
+    <string name="welcome">"Welcome !"</string>
+    <string name="invalid_username">Not a valid username</string>
+    <string name="invalid_password">Password must be >5 characters</string>
+    <string name="login_failed">"Login failed"</string>
+    <string name="check_session">Checking for active session</string>
+    <string name="no_active_session">Session expired, establishing a new one</string>
+    <string name="download_data">Downloading data from the server</string>
+    <string name="title_flats">Flats</string>
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_lessees">Lessees</string>
+    <string name="title_balance">Balance</string>
+    <string name="income">Income</string>
+    <string name="expenses">Expenses</string>
+    <string name="savings">Savings</string>
+    <string name="floor">Floor %1$d</string>
+    <string name="address">Address</string>
+    <string name="name">Name</string>
+    <string name="floor_hint">Floor</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="update">Update</string>
+    <string name="error_field_required">This field is required</string>
+    <string name="flat">Flat</string>
+    <string name="postal_code">Postal Code</string>
+    <string name="tin">TIN</string>
+    <string name="rent">Rent</string>
+    <string name="from">From</string>
+    <string name="until">Until</string>
+    <string name="postal_code_title">Postal Code %1$s</string>
+    <string name="tin_title">TIN %1$d</string>
+    <string name="euro">€</string>
+    <string name="connection_timeout">Connection timeout</string>
+    <string name="unknown_host">Unable to resolve host</string>
+    <string name="error_postal_code">Postal Code is not valid</string>
+    <string name="error_tin">TIN is not valid</string>
+    <string name="comment">Comment</string>
+    <string name="date">Date</string>
+    <string name="amount">Amount</string>
+    <string name="savings_per_year">Savings Per Year</string>
+</resources>

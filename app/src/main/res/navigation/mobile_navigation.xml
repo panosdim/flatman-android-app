@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/navigation_dashboard">
+
+    <fragment
+        android:id="@+id/navigation_home"
+        android:name="com.panosdim.flatman.ui.fragments.FlatsFragment"
+        android:label="@string/title_flats"
+        tools:layout="@layout/fragment_flats" />
+
+    <fragment
+        android:id="@+id/navigation_dashboard"
+        android:name="com.panosdim.flatman.ui.fragments.DashboardFragment"
+        android:label="@string/title_dashboard"
+        tools:layout="@layout/fragment_dashboard" />
+
+    <fragment
+        android:id="@+id/navigation_lessees"
+        android:name="com.panosdim.flatman.ui.fragments.LesseesFragment"
+        android:label="@string/title_lessees"
+        tools:layout="@layout/fragment_lessees" />
+
+    <fragment
+        android:id="@+id/navigation_balance"
+        android:name="com.panosdim.flatman.ui.fragments.BalanceFragment"
+        android:label="@string/title_balance"
+        tools:layout="@layout/fragment_balance" />
+</navigation>

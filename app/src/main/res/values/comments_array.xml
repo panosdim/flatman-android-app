@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="comments">
+        <item>Ενοίκιο Ιανουαρίου</item>
+        <item>Ενοίκιο Φεβρουαρίου</item>
+        <item>Ενοίκιο Μαρτίου</item>
+        <item>Ενοίκιο Απριλίου</item>
+        <item>Ενοίκιο Μαΐου</item>
+        <item>Ενοίκιο Ιουνίου</item>
+        <item>Ενοίκιο Ιουλίου</item>
+        <item>Ενοίκιο Αυγούστου</item>
+        <item>Ενοίκιο Σεπτεμβρίου</item>
+        <item>Ενοίκιο Οκτωβρίου</item>
+        <item>Ενοίκιο Νοεμβρίου</item>
+        <item>Ενοίκιο Δεκεμβρίου</item>
+        <item>Εγγύηση</item>
+        <item>Πληρωμή Μεσίτη</item>
+    </string-array>
+</resources>

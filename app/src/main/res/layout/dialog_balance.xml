@@ -15,7 +15,6 @@
         android:layout_height="wrap_content"
         android:hint="@string/date"
         android:paddingBottom="8dp"
-        android:textColorHint="@color/secondaryDarkColor"
         app:boxStrokeColor="@color/secondaryDarkColor">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -35,7 +34,6 @@
         android:hint="@string/amount"
         android:paddingBottom="8dp"
         app:suffixText="@string/euro"
-        android:textColorHint="@color/secondaryDarkColor"
         app:boxStrokeColor="@color/secondaryDarkColor">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -53,7 +51,6 @@
         android:layout_height="wrap_content"
         android:hint="@string/comment"
         android:paddingVertical="8dp"
-        android:textColorHint="@color/secondaryDarkColor"
         app:boxStrokeColor="@color/secondaryDarkColor">
 
         <AutoCompleteTextView

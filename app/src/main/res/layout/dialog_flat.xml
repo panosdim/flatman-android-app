@@ -13,7 +13,6 @@
         android:layout_height="wrap_content"
         android:hint="@string/name"
         android:paddingBottom="8dp"
-        android:textColorHint="@color/secondaryDarkColor"
         app:boxStrokeColor="@color/secondaryDarkColor">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -30,7 +29,6 @@
         android:layout_height="wrap_content"
         android:hint="@string/address"
         android:paddingBottom="8dp"
-        android:textColorHint="@color/secondaryDarkColor"
         app:boxStrokeColor="@color/secondaryDarkColor">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -47,7 +45,6 @@
         android:layout_height="wrap_content"
         android:hint="@string/floor_hint"
         android:paddingBottom="8dp"
-        android:textColorHint="@color/secondaryDarkColor"
         app:boxStrokeColor="@color/secondaryDarkColor">
 
         <com.google.android.material.textfield.TextInputEditText

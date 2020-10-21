@@ -1,11 +1,11 @@
 package com.panosdim.flatman.ui.fragments
 
 import android.os.Bundle
+import android.text.Editable
 import android.text.InputFilter
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.view.WindowManager
+import android.text.TextWatcher
+import android.view.*
+import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.fragment.app.Fragment
@@ -20,7 +20,6 @@ import com.panosdim.flatman.model.Balance
 import com.panosdim.flatman.model.Flat
 import com.panosdim.flatman.repository
 import com.panosdim.flatman.ui.adapters.BalanceAdapter
-import com.panosdim.flatman.ui.login.afterTextChanged
 import com.panosdim.flatman.utils.*
 import kotlinx.android.synthetic.main.dialog_balance.view.*
 import kotlinx.android.synthetic.main.fragment_balance.view.*
@@ -33,6 +32,7 @@ import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.time.LocalDate
 
+
 class BalanceFragment : Fragment() {
 
     private lateinit var dialog: BottomSheetDialog
@@ -42,6 +42,19 @@ class BalanceFragment : Fragment() {
     private var selectedFlat: Flat? = null
     private lateinit var flatSelectAdapter: ArrayAdapter<Flat>
     private val scope = CoroutineScope(Dispatchers.Main)
+    private val textWatcher = object : TextWatcher {
+        override fun afterTextChanged(editable: Editable?) {
+            validateForm()
+        }
+
+        override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
+            // Not Needed
+        }
+
+        override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+            // Not Needed
+        }
+    }
 
     private fun balanceItemClicked(balanceItem: Balance) {
         balance = balanceItem
@@ -66,16 +79,11 @@ class BalanceFragment : Fragment() {
             showForm(balance)
         }
 
-        dialogView.balanceDate.afterTextChanged {
-            validateForm()
-        }
-
-        dialogView.balanceAmount.afterTextChanged {
-            validateForm()
-        }
-
-        dialogView.balanceComment.afterTextChanged {
-            validateForm()
+        dialogView.balanceComment.setOnEditorActionListener { _, actionId, event ->
+            if (isFormValid() && (event != null && event.keyCode == KeyEvent.KEYCODE_ENTER || actionId == EditorInfo.IME_ACTION_DONE)) {
+                saveBalance()
+            }
+            false
         }
 
         dialogView.balanceAmount.filters = arrayOf<InputFilter>(
@@ -345,20 +353,31 @@ class BalanceFragment : Fragment() {
         balanceAmount.error = null
         balanceComment.error = null
 
-        if (balanceDate.text!!.isEmpty()) {
+        // Store values.
+        val date = balanceDate.text.toString()
+        val amount = balanceAmount.text.toString()
+        val comment = balanceComment.text.toString()
+
+        if (date.isEmpty()) {
             balanceDate.error = getString(R.string.error_field_required)
             saveBalance.isEnabled = false
         }
 
-        if (balanceAmount.text!!.isEmpty()) {
+        if (amount.isEmpty()) {
             balanceAmount.error = getString(R.string.error_field_required)
             saveBalance.isEnabled = false
         }
 
-        if (balanceComment.text!!.isEmpty()) {
+        if (comment.isEmpty()) {
             balanceComment.error = getString(R.string.error_field_required)
             saveBalance.isEnabled = false
         }
+    }
+
+    private fun isFormValid(): Boolean {
+        return dialogView.balanceDate.error == null &&
+                dialogView.balanceAmount.error == null &&
+                dialogView.balanceComment.error == null
     }
 
     private fun showForm(balance: Balance?) {
@@ -366,7 +385,17 @@ class BalanceFragment : Fragment() {
         dialogView.saveBalance.isEnabled = true
         dialogView.deleteBalance.isEnabled = true
 
+        dialogView.balanceDate.removeTextChangedListener(textWatcher)
+        dialogView.balanceAmount.removeTextChangedListener(textWatcher)
+        dialogView.balanceComment.removeTextChangedListener(textWatcher)
+        dialogView.balanceDate.error = null
+        dialogView.balanceAmount.error = null
+        dialogView.balanceComment.error = null
+
         if (balance == null) {
+            dialogView.balanceDate.addTextChangedListener(textWatcher)
+            dialogView.balanceAmount.addTextChangedListener(textWatcher)
+            dialogView.balanceComment.addTextChangedListener(textWatcher)
             val today = LocalDate.now()
             dialogView.balanceAmount.setText("")
             dialogView.balanceComment.setText("")
@@ -378,11 +407,16 @@ class BalanceFragment : Fragment() {
             dialogView.balanceDate.setText(LocalDate.parse(balance.date).toShowDateFormat())
             dialogView.balanceAmount.setText(balance.amount.toString())
             dialogView.balanceComment.setText(balance.comment)
+            dialogView.balanceDate.clearFocus()
+            dialogView.balanceAmount.clearFocus()
+            dialogView.balanceComment.clearFocus()
             dialogView.deleteBalance.visibility = View.VISIBLE
             dialogView.saveBalance.setText(R.string.update)
+            dialogView.balanceDate.addTextChangedListener(textWatcher)
+            dialogView.balanceAmount.addTextChangedListener(textWatcher)
+            dialogView.balanceComment.addTextChangedListener(textWatcher)
         }
 
         dialog.show()
     }
-
 }

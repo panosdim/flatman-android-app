@@ -1,9 +1,13 @@
 package com.panosdim.flatman.ui.fragments
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -13,7 +17,6 @@ import com.panosdim.flatman.flatsList
 import com.panosdim.flatman.model.Flat
 import com.panosdim.flatman.repository
 import com.panosdim.flatman.ui.adapters.FlatsAdapter
-import com.panosdim.flatman.ui.login.afterTextChanged
 import kotlinx.android.synthetic.main.dialog_flat.view.*
 import kotlinx.android.synthetic.main.fragment_flats.view.*
 import kotlinx.coroutines.CoroutineScope
@@ -32,6 +35,19 @@ class FlatsFragment : Fragment() {
     private lateinit var dialogView: View
     private var flat: Flat? = null
     private val scope = CoroutineScope(Dispatchers.Main)
+    private val textWatcher = object : TextWatcher {
+        override fun afterTextChanged(editable: Editable?) {
+            validateForm()
+        }
+
+        override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
+            // Not Needed
+        }
+
+        override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+            // Not Needed
+        }
+    }
 
     private fun flatItemClicked(flatItem: Flat) {
         flat = flatItem
@@ -58,16 +74,11 @@ class FlatsFragment : Fragment() {
             showForm(flat)
         }
 
-        dialogView.flatName.afterTextChanged {
-            validateForm()
-        }
-
-        dialogView.flatAddress.afterTextChanged {
-            validateForm()
-        }
-
-        dialogView.flatFloor.afterTextChanged {
-            validateForm()
+        dialogView.flatFloor.setOnEditorActionListener { _, actionId, event ->
+            if (isFormValid() && (event != null && event.keyCode == KeyEvent.KEYCODE_ENTER || actionId == EditorInfo.IME_ACTION_DONE)) {
+                saveFlat()
+            }
+            false
         }
 
         dialogView.saveFlat.setOnClickListener {
@@ -83,64 +94,68 @@ class FlatsFragment : Fragment() {
         }
 
         dialogView.deleteFlat.setOnClickListener {
-            flat?.let {
-                scope.launch {
-                    dialogView.prgIndicator.visibility = View.VISIBLE
-                    dialogView.deleteFlat.isEnabled = false
-                    dialogView.saveFlat.isEnabled = false
-                    try {
-                        withContext(Dispatchers.IO) {
-                            val response = repository.deleteFlat(it.id!!)
-                            when (response.code()) {
-                                204 -> {
-                                    val temp = flatsList.value
-                                    temp!!.remove(it)
-                                    flatsList.postValue(temp)
-                                }
-                                404 -> {
-                                    Toast.makeText(
-                                        requireContext(),
-                                        "Error deleting flat. Flat not found.",
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                    dialogView.prgIndicator.visibility = View.GONE
-                                    dialogView.deleteFlat.isEnabled = true
-                                    dialogView.saveFlat.isEnabled = true
-                                }
-                            }
-                        }
-                        flatsViewAdapter.notifyDataSetChanged()
-                        dialog.hide()
-                    } catch (ex: HttpException) {
-                        Toast.makeText(
-                            requireContext(),
-                            "Error deleting flat.",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    } catch (t: SocketTimeoutException) {
-                        Toast.makeText(
-                            requireContext(),
-                            getString(R.string.connection_timeout),
-                            Toast.LENGTH_LONG
-                        )
-                            .show()
-                    } catch (d: UnknownHostException) {
-                        Toast.makeText(
-                            requireContext(),
-                            getString(R.string.unknown_host),
-                            Toast.LENGTH_LONG
-                        )
-                            .show()
-                    } finally {
-                        dialogView.prgIndicator.visibility = View.GONE
-                        dialogView.saveFlat.isEnabled = true
-                        dialogView.deleteFlat.isEnabled = true
-                    }
-                }
-            }
+            deleteFlat()
         }
 
         return root
+    }
+
+    private fun deleteFlat() {
+        flat?.let {
+            scope.launch {
+                dialogView.prgIndicator.visibility = View.VISIBLE
+                dialogView.deleteFlat.isEnabled = false
+                dialogView.saveFlat.isEnabled = false
+                try {
+                    withContext(Dispatchers.IO) {
+                        val response = repository.deleteFlat(it.id!!)
+                        when (response.code()) {
+                            204 -> {
+                                val temp = flatsList.value
+                                temp!!.remove(it)
+                                flatsList.postValue(temp)
+                            }
+                            404 -> {
+                                Toast.makeText(
+                                    requireContext(),
+                                    "Error deleting flat. Flat not found.",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                dialogView.prgIndicator.visibility = View.GONE
+                                dialogView.deleteFlat.isEnabled = true
+                                dialogView.saveFlat.isEnabled = true
+                            }
+                        }
+                    }
+                    flatsViewAdapter.notifyDataSetChanged()
+                    dialog.hide()
+                } catch (ex: HttpException) {
+                    Toast.makeText(
+                        requireContext(),
+                        "Error deleting flat.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                } catch (t: SocketTimeoutException) {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.connection_timeout),
+                        Toast.LENGTH_LONG
+                    )
+                        .show()
+                } catch (d: UnknownHostException) {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.unknown_host),
+                        Toast.LENGTH_LONG
+                    )
+                        .show()
+                } finally {
+                    dialogView.prgIndicator.visibility = View.GONE
+                    dialogView.saveFlat.isEnabled = true
+                    dialogView.deleteFlat.isEnabled = true
+                }
+            }
+        }
     }
 
     private fun saveFlat() {
@@ -244,18 +259,36 @@ class FlatsFragment : Fragment() {
         dialogView.prgIndicator.visibility = View.GONE
         dialogView.saveFlat.isEnabled = true
         dialogView.deleteFlat.isEnabled = true
+
+        dialogView.flatName.removeTextChangedListener(textWatcher)
+        dialogView.flatAddress.removeTextChangedListener(textWatcher)
+        dialogView.flatFloor.removeTextChangedListener(textWatcher)
+        dialogView.flatName.error = null
+        dialogView.flatAddress.error = null
+        dialogView.flatFloor.error = null
+
         if (flat == null) {
+            dialogView.flatName.addTextChangedListener(textWatcher)
+            dialogView.flatAddress.addTextChangedListener(textWatcher)
+            dialogView.flatFloor.addTextChangedListener(textWatcher)
             dialogView.flatName.setText("")
             dialogView.flatAddress.setText("")
             dialogView.flatFloor.setText("")
             dialogView.deleteFlat.visibility = View.GONE
             dialogView.saveFlat.setText(R.string.save)
+            dialogView.flatName.requestFocus()
         } else {
             dialogView.flatName.setText(flat.name)
             dialogView.flatAddress.setText(flat.address)
             dialogView.flatFloor.setText(flat.floor.toString())
+            dialogView.flatName.clearFocus()
+            dialogView.flatAddress.clearFocus()
+            dialogView.flatFloor.clearFocus()
             dialogView.deleteFlat.visibility = View.VISIBLE
             dialogView.saveFlat.setText(R.string.update)
+            dialogView.flatName.addTextChangedListener(textWatcher)
+            dialogView.flatAddress.addTextChangedListener(textWatcher)
+            dialogView.flatFloor.addTextChangedListener(textWatcher)
         }
 
         dialog.show()
@@ -271,19 +304,30 @@ class FlatsFragment : Fragment() {
         flatAddress.error = null
         flatFloor.error = null
 
-        if (flatName.text!!.isEmpty()) {
+        // Store values.
+        val name = flatName.text.toString()
+        val address = flatAddress.text.toString()
+        val floor = flatFloor.text.toString()
+
+        if (name.isEmpty()) {
             flatName.error = getString(R.string.error_field_required)
             saveFlat.isEnabled = false
         }
 
-        if (flatAddress.text!!.isEmpty()) {
+        if (address.isEmpty()) {
             flatAddress.error = getString(R.string.error_field_required)
             saveFlat.isEnabled = false
         }
 
-        if (flatFloor.text!!.isEmpty()) {
+        if (floor.isEmpty()) {
             flatFloor.error = getString(R.string.error_field_required)
             saveFlat.isEnabled = false
         }
+    }
+
+    private fun isFormValid(): Boolean {
+        return dialogView.flatName.error == null &&
+                dialogView.flatAddress.error == null &&
+                dialogView.flatFloor.error == null
     }
 }

@@ -1,9 +1,13 @@
 package com.panosdim.flatman.ui.fragments
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.fragment.app.Fragment
@@ -20,7 +24,6 @@ import com.panosdim.flatman.model.Lessee
 import com.panosdim.flatman.repository
 import com.panosdim.flatman.rest.data.CheckTinResponse
 import com.panosdim.flatman.ui.adapters.LesseesAdapter
-import com.panosdim.flatman.ui.login.afterTextChanged
 import com.panosdim.flatman.utils.*
 import kotlinx.android.synthetic.main.dialog_lessee.view.*
 import kotlinx.android.synthetic.main.fragment_lessees.view.*
@@ -44,6 +47,19 @@ class LesseesFragment : Fragment() {
     private lateinit var flatSelectAdapter: ArrayAdapter<Flat>
     private val scope = CoroutineScope(Dispatchers.Main)
     private val postalCodeRegex = """^[12345678][0-9]{4}$""".toRegex()
+    private val textWatcher = object : TextWatcher {
+        override fun afterTextChanged(editable: Editable?) {
+            validateForm()
+        }
+
+        override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
+            // Not Needed
+        }
+
+        override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+            // Not Needed
+        }
+    }
 
     private fun lesseeItemClicked(lesseeItem: Lessee) {
         lessee = lesseeItem
@@ -76,32 +92,11 @@ class LesseesFragment : Fragment() {
             showForm(lessee)
         }
 
-        dialogView.lesseeName.afterTextChanged {
-            validateForm()
-        }
-
-        dialogView.lesseeAddress.afterTextChanged {
-            validateForm()
-        }
-
-        dialogView.lesseePostalCode.afterTextChanged {
-            validateForm()
-        }
-
-        dialogView.lesseeTIN.afterTextChanged {
-            validateForm()
-        }
-
-        dialogView.lesseeRent.afterTextChanged {
-            validateForm()
-        }
-
-        dialogView.lesseeFrom.afterTextChanged {
-            validateForm()
-        }
-
-        dialogView.lesseeUntil.afterTextChanged {
-            validateForm()
+        dialogView.lesseeRent.setOnEditorActionListener { _, actionId, event ->
+            if (isFormValid() && (event != null && event.keyCode == KeyEvent.KEYCODE_ENTER || actionId == EditorInfo.IME_ACTION_DONE)) {
+                saveLessee()
+            }
+            false
         }
 
         dialogView.lesseeFrom.setOnClickListener {
@@ -379,8 +374,6 @@ class LesseesFragment : Fragment() {
         val lesseePostalCode = dialogView.lesseePostalCode
         val lesseeTIN = dialogView.lesseeTIN
         val lesseeRent = dialogView.lesseeRent
-        val lesseeFrom = dialogView.lesseeFrom
-        val lesseeUntil = dialogView.lesseeUntil
         val saveLessee = dialogView.saveLessee
 
         saveLessee.isEnabled = true
@@ -389,39 +382,44 @@ class LesseesFragment : Fragment() {
         lesseePostalCode.error = null
         lesseeTIN.error = null
         lesseeRent.error = null
-        lesseeFrom.error = null
-        lesseeUntil.error = null
 
-        if (lesseeName.text!!.isEmpty()) {
+        // Store values.
+        val name = lesseeName.text.toString()
+        val address = lesseeAddress.text.toString()
+        val postalCode = lesseePostalCode.text.toString()
+        val tin = lesseeTIN.text.toString()
+        val rent = lesseeRent.text.toString()
+
+        if (name.isEmpty()) {
             lesseeName.error = getString(R.string.error_field_required)
             saveLessee.isEnabled = false
         }
 
-        if (lesseeAddress.text!!.isEmpty()) {
+        if (address.isEmpty()) {
             lesseeAddress.error = getString(R.string.error_field_required)
             saveLessee.isEnabled = false
         }
 
-        if (lesseePostalCode.text!!.isEmpty()) {
+        if (postalCode.isEmpty()) {
             lesseePostalCode.error = getString(R.string.error_field_required)
             saveLessee.isEnabled = false
         } else {
-            if (!postalCodeRegex.matches(lesseePostalCode.text.toString())) {
+            if (!postalCodeRegex.matches(postalCode)) {
                 lesseePostalCode.error = getString(R.string.error_postal_code)
                 saveLessee.isEnabled = false
             }
         }
 
-        if (lesseeTIN.text!!.isEmpty()) {
+        if (tin.isEmpty()) {
             lesseeTIN.error = getString(R.string.error_field_required)
             saveLessee.isEnabled = false
         }
 
-        if (lesseeTIN.text.toString().length == 9) {
+        if (tin.length == 9) {
             scope.launch {
                 lateinit var response: CheckTinResponse
                 withContext(Dispatchers.IO) {
-                    response = repository.checkTin(lesseeTIN.text.toString())
+                    response = repository.checkTin(tin)
                 }
                 if (!(response.validStructure && response.validSyntax)) {
                     lesseeTIN.error = getString(R.string.error_tin)
@@ -430,17 +428,43 @@ class LesseesFragment : Fragment() {
             }
         }
 
-        if (lesseeRent.text!!.isEmpty()) {
+        if (rent.isEmpty()) {
             lesseeRent.error = getString(R.string.error_field_required)
             saveLessee.isEnabled = false
         }
+    }
+
+    private fun isFormValid(): Boolean {
+        return dialogView.lesseeName.error == null &&
+                dialogView.lesseeAddress.error == null &&
+                dialogView.lesseePostalCode.error == null &&
+                dialogView.lesseeTIN.error == null &&
+                dialogView.lesseeRent.error == null
     }
 
     private fun showForm(lessee: Lessee?) {
         dialogView.prgIndicator.visibility = View.GONE
         dialogView.saveLessee.isEnabled = true
         dialogView.deleteLessee.isEnabled = true
+
+        dialogView.lesseeName.removeTextChangedListener(textWatcher)
+        dialogView.lesseeAddress.removeTextChangedListener(textWatcher)
+        dialogView.lesseePostalCode.removeTextChangedListener(textWatcher)
+        dialogView.lesseeTIN.removeTextChangedListener(textWatcher)
+        dialogView.lesseeRent.removeTextChangedListener(textWatcher)
+        dialogView.lesseeName.error = null
+        dialogView.lesseeAddress.error = null
+        dialogView.lesseePostalCode.error = null
+        dialogView.lesseeTIN.error = null
+        dialogView.lesseeRent.error = null
+
+
         if (lessee == null) {
+            dialogView.lesseeName.addTextChangedListener(textWatcher)
+            dialogView.lesseeAddress.addTextChangedListener(textWatcher)
+            dialogView.lesseePostalCode.addTextChangedListener(textWatcher)
+            dialogView.lesseeTIN.addTextChangedListener(textWatcher)
+            dialogView.lesseeRent.addTextChangedListener(textWatcher)
             val from = LocalDate.now().with(TemporalAdjusters.firstDayOfNextMonth())
             val until = from.plusYears(1).minusMonths(1).with(TemporalAdjusters.lastDayOfMonth())
             dialogView.lesseeName.setText("")
@@ -461,8 +485,20 @@ class LesseesFragment : Fragment() {
             dialogView.lesseeRent.setText(lessee.rent.toString())
             dialogView.lesseeFrom.setText(LocalDate.parse(lessee.from).toShowDateFormat())
             dialogView.lesseeUntil.setText(LocalDate.parse(lessee.until).toShowDateFormat())
+            dialogView.lesseeName.clearFocus()
+            dialogView.lesseeAddress.clearFocus()
+            dialogView.lesseePostalCode.clearFocus()
+            dialogView.lesseeTIN.clearFocus()
+            dialogView.lesseeRent.clearFocus()
+            dialogView.lesseeFrom.clearFocus()
+            dialogView.lesseeUntil.clearFocus()
             dialogView.deleteLessee.visibility = View.VISIBLE
             dialogView.saveLessee.setText(R.string.update)
+            dialogView.lesseeName.addTextChangedListener(textWatcher)
+            dialogView.lesseeAddress.addTextChangedListener(textWatcher)
+            dialogView.lesseePostalCode.addTextChangedListener(textWatcher)
+            dialogView.lesseeTIN.addTextChangedListener(textWatcher)
+            dialogView.lesseeRent.addTextChangedListener(textWatcher)
         }
 
         dialog.show()

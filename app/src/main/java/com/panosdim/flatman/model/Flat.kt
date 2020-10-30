@@ -1,6 +1,16 @@
 package com.panosdim.flatman.model
 
-data class Flat(var id: Int? = null, var name: String, var address: String, var floor: Int) {
+import androidx.room.ColumnInfo
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity
+data class Flat(
+    @PrimaryKey var id: Int? = null,
+    @ColumnInfo var name: String,
+    @ColumnInfo var address: String,
+    @ColumnInfo var floor: Int
+) {
     override fun toString(): String {
         return name
     }

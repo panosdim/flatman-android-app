@@ -8,6 +8,7 @@ const val PREFS_FILENAME = "credentials"
 const val TOKEN = "token"
 const val EMAIL = "email"
 const val PASSWORD = "password"
+const val FLAT_FETCH_DATE = "flat_fetch_date"
 
 
 class Prefs(context: Context) {
@@ -26,4 +27,8 @@ class Prefs(context: Context) {
     var password: String
         get() = prefs.getString(PASSWORD, "")!!
         set(value) = prefs.edit().putString(PASSWORD, value).apply()
+
+    var flatFetchDate: Long
+        get() = prefs.getLong(FLAT_FETCH_DATE, -1)
+        set(value) = prefs.edit().putLong(FLAT_FETCH_DATE, value).apply()
 }

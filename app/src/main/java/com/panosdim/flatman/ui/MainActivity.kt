@@ -78,4 +78,10 @@ class MainActivity : AppCompatActivity() {
 
         registerReceiver(onComplete, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
     }
+
+    override fun onResume() {
+        super.onResume()
+        // TODO: Refresh stored token
+        println("TEST")
+    }
 }

@@ -9,18 +9,19 @@ import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.datepicker.CalendarConstraints
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.panosdim.flatman.R
 import com.panosdim.flatman.balanceList
-import com.panosdim.flatman.flatsList
 import com.panosdim.flatman.model.Balance
 import com.panosdim.flatman.model.Flat
 import com.panosdim.flatman.repository
 import com.panosdim.flatman.ui.adapters.BalanceAdapter
 import com.panosdim.flatman.utils.*
+import com.panosdim.flatman.viewmodel.FlatViewModel
 import kotlinx.android.synthetic.main.dialog_balance.view.*
 import kotlinx.android.synthetic.main.fragment_balance.view.*
 import kotlinx.coroutines.CoroutineScope
@@ -34,7 +35,7 @@ import java.time.LocalDate
 
 
 class BalanceFragment : Fragment() {
-
+    private val flatViewModel: FlatViewModel by viewModels()
     private lateinit var dialog: BottomSheetDialog
     private lateinit var dialogView: View
     private lateinit var rootView: View
@@ -137,8 +138,8 @@ class BalanceFragment : Fragment() {
             deleteBalance()
         }
 
-        flatsList.observe(viewLifecycleOwner, {
-            if (it != null && it.size > 0) {
+        flatViewModel.flats.observe(viewLifecycleOwner, {
+            if (it != null && it.isNotEmpty()) {
                 rootView.addNewBalance.isEnabled = true
                 flatSelectAdapter =
                     ArrayAdapter(requireContext(), R.layout.list_item, it)
@@ -172,7 +173,7 @@ class BalanceFragment : Fragment() {
 
     private fun updateBalanceAdapter() {
         val temp = balanceList.value!!.filter {
-            it.flatId == selectedFlat!!.id
+            it.flatId == selectedFlat?.id ?: -1
         }.sortedByDescending { it.date }
         rootView.rvBalance.adapter =
             BalanceAdapter(temp) { balanceItem: Balance -> balanceItemClicked(balanceItem) }

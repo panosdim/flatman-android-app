@@ -5,12 +5,12 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.panosdim.flatman.R
-import com.panosdim.flatman.flatsList
 import com.panosdim.flatman.model.Flat
 import kotlinx.android.synthetic.main.row_flat.view.*
 
 
 class FlatsAdapter(
+    private val flatsList: List<Flat>,
     private val clickListener: (Flat) -> Unit
 ) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -28,10 +28,10 @@ class FlatsAdapter(
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         // Populate ViewHolder with data that corresponds to the position in the list
         // which we are told to load
-        (holder as ExpenseViewHolder).bind(flatsList.value!![position], clickListener)
+        (holder as ExpenseViewHolder).bind(flatsList[position], clickListener)
     }
 
-    override fun getItemCount() = flatsList.value!!.size
+    override fun getItemCount() = flatsList.size
 
     class ExpenseViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         fun bind(flat: Flat, clickListener: (Flat) -> Unit) {

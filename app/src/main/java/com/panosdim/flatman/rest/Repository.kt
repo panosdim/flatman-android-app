@@ -1,7 +1,6 @@
 package com.panosdim.flatman.rest
 
 import com.panosdim.flatman.model.Balance
-import com.panosdim.flatman.model.Flat
 import com.panosdim.flatman.model.Lessee
 import com.panosdim.flatman.rest.data.LoginRequest
 
@@ -11,11 +10,6 @@ class Repository {
     suspend fun login(loginRequest: LoginRequest) = client.login(loginRequest)
     suspend fun checkSession() = client.user()
     suspend fun checkTin(tin: String) = client.checkTin(tin)
-
-    suspend fun getAllFlats() = client.flat()
-    suspend fun createNewFlat(newFlat: Flat) = client.flat(newFlat)
-    suspend fun deleteFlat(id: Int) = client.flat(id)
-    suspend fun updateFlat(id: Int, updatedFlat: Flat) = client.flat(id, updatedFlat)
 
     suspend fun getAllLessees() = client.lessee()
     suspend fun createNewLessee(newLessee: Lessee) = client.lessee(newLessee)

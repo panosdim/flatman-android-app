@@ -1,8 +1,6 @@
 package com.panosdim.flatman.ui.fragments
 
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
@@ -10,49 +8,43 @@ import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.panosdim.flatman.R
-import com.panosdim.flatman.flatsList
 import com.panosdim.flatman.model.Flat
-import com.panosdim.flatman.repository
+import com.panosdim.flatman.rest.data.Resource
 import com.panosdim.flatman.ui.adapters.FlatsAdapter
+import com.panosdim.flatman.utils.generateTextWatcher
+import com.panosdim.flatman.viewmodel.FlatViewModel
 import kotlinx.android.synthetic.main.dialog_flat.view.*
+import kotlinx.android.synthetic.main.fragment_flats.*
 import kotlinx.android.synthetic.main.fragment_flats.view.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import retrofit2.HttpException
-import java.net.SocketTimeoutException
-import java.net.UnknownHostException
 
 
 class FlatsFragment : Fragment() {
     private val flatsViewAdapter =
-        FlatsAdapter { flatItem: Flat -> flatItemClicked(flatItem) }
+        FlatsAdapter(mutableListOf()) { flatItem: Flat -> flatItemClicked(flatItem) }
     private lateinit var dialog: BottomSheetDialog
     private lateinit var dialogView: View
     private var flat: Flat? = null
-    private val scope = CoroutineScope(Dispatchers.Main)
-    private val textWatcher = object : TextWatcher {
-        override fun afterTextChanged(editable: Editable?) {
-            validateForm()
-        }
-
-        override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
-            // Not Needed
-        }
-
-        override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-            // Not Needed
-        }
-    }
+    private val viewModel: FlatViewModel by viewModels()
+    private val textWatcher = generateTextWatcher(::validateForm)
 
     private fun flatItemClicked(flatItem: Flat) {
         flat = flatItem
         showForm(flat)
     }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        viewModel.flats.observe(viewLifecycleOwner) {
+            rvFlats.adapter =
+                FlatsAdapter(it) { flatItem: Flat -> flatItemClicked(flatItem) }
+            (rvFlats.adapter as FlatsAdapter).notifyDataSetChanged()
+        }
+    }
+
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -76,16 +68,16 @@ class FlatsFragment : Fragment() {
 
         dialogView.flatFloor.setOnEditorActionListener { _, actionId, event ->
             if (isFormValid() && (event != null && event.keyCode == KeyEvent.KEYCODE_ENTER || actionId == EditorInfo.IME_ACTION_DONE)) {
-                saveFlat()
+                flat?.let {
+                    updateFlat(it)
+                } ?: kotlin.run {
+                    saveFlat()
+                }
             }
             false
         }
 
         dialogView.saveFlat.setOnClickListener {
-            dialogView.prgIndicator.visibility = View.VISIBLE
-            dialogView.saveFlat.isEnabled = false
-            dialogView.deleteFlat.isEnabled = false
-
             flat?.let {
                 updateFlat(it)
             } ?: kotlin.run {
@@ -102,57 +94,31 @@ class FlatsFragment : Fragment() {
 
     private fun deleteFlat() {
         flat?.let {
-            scope.launch {
-                dialogView.prgIndicator.visibility = View.VISIBLE
-                dialogView.deleteFlat.isEnabled = false
-                dialogView.saveFlat.isEnabled = false
-                try {
-                    withContext(Dispatchers.IO) {
-                        val response = repository.deleteFlat(it.id!!)
-                        when (response.code()) {
-                            204 -> {
-                                val temp = flatsList.value
-                                temp!!.remove(it)
-                                flatsList.postValue(temp)
-                            }
-                            404 -> {
-                                Toast.makeText(
-                                    requireContext(),
-                                    "Error deleting flat. Flat not found.",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                                dialogView.prgIndicator.visibility = View.GONE
-                                dialogView.deleteFlat.isEnabled = true
-                                dialogView.saveFlat.isEnabled = true
-                            }
+            viewModel.removeFlat(it).observe(viewLifecycleOwner) { resource ->
+                if (resource != null) {
+                    when (resource) {
+                        is Resource.Success -> {
+                            dialog.hide()
+                            dialogView.prgIndicator.visibility = View.GONE
+                            dialogView.deleteFlat.isEnabled = true
+                            dialogView.saveFlat.isEnabled = true
+                        }
+                        is Resource.Error -> {
+                            Toast.makeText(
+                                requireContext(),
+                                resource.message,
+                                Toast.LENGTH_LONG
+                            ).show()
+                            dialogView.prgIndicator.visibility = View.GONE
+                            dialogView.deleteFlat.isEnabled = true
+                            dialogView.saveFlat.isEnabled = true
+                        }
+                        is Resource.Loading -> {
+                            dialogView.prgIndicator.visibility = View.VISIBLE
+                            dialogView.deleteFlat.isEnabled = false
+                            dialogView.saveFlat.isEnabled = false
                         }
                     }
-                    flatsViewAdapter.notifyDataSetChanged()
-                    dialog.hide()
-                } catch (ex: HttpException) {
-                    Toast.makeText(
-                        requireContext(),
-                        "Error deleting flat.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                } catch (t: SocketTimeoutException) {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.connection_timeout),
-                        Toast.LENGTH_LONG
-                    )
-                        .show()
-                } catch (d: UnknownHostException) {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.unknown_host),
-                        Toast.LENGTH_LONG
-                    )
-                        .show()
-                } finally {
-                    dialogView.prgIndicator.visibility = View.GONE
-                    dialogView.saveFlat.isEnabled = true
-                    dialogView.deleteFlat.isEnabled = true
                 }
             }
         }
@@ -166,37 +132,31 @@ class FlatsFragment : Fragment() {
             dialogView.flatFloor.text.toString().toInt()
         )
 
-        scope.launch {
-            try {
-                withContext(Dispatchers.IO) {
-                    val response = repository.createNewFlat(newFlat)
-                    val temp = flatsList.value
-                    temp?.add(response)
-                    flatsList.postValue(temp)
+        viewModel.addFlat(newFlat).observe(viewLifecycleOwner) { resource ->
+            if (resource != null) {
+                when (resource) {
+                    is Resource.Success -> {
+                        dialog.hide()
+                        dialogView.prgIndicator.visibility = View.GONE
+                        dialogView.deleteFlat.isEnabled = true
+                        dialogView.saveFlat.isEnabled = true
+                    }
+                    is Resource.Error -> {
+                        Toast.makeText(
+                            requireContext(),
+                            resource.message,
+                            Toast.LENGTH_LONG
+                        ).show()
+                        dialogView.prgIndicator.visibility = View.GONE
+                        dialogView.deleteFlat.isEnabled = true
+                        dialogView.saveFlat.isEnabled = true
+                    }
+                    is Resource.Loading -> {
+                        dialogView.prgIndicator.visibility = View.VISIBLE
+                        dialogView.deleteFlat.isEnabled = false
+                        dialogView.saveFlat.isEnabled = false
+                    }
                 }
-                flatsViewAdapter.notifyDataSetChanged()
-                dialog.hide()
-            } catch (e: HttpException) {
-                Toast.makeText(requireContext(), "Error saving flat.", Toast.LENGTH_SHORT)
-                    .show()
-            } catch (t: SocketTimeoutException) {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.connection_timeout),
-                    Toast.LENGTH_LONG
-                )
-                    .show()
-            } catch (d: UnknownHostException) {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.unknown_host),
-                    Toast.LENGTH_LONG
-                )
-                    .show()
-            } finally {
-                dialogView.prgIndicator.visibility = View.GONE
-                dialogView.saveFlat.isEnabled = true
-                dialogView.deleteFlat.isEnabled = true
             }
         }
     }
@@ -214,42 +174,31 @@ class FlatsFragment : Fragment() {
             flat.address = dialogView.flatAddress.text.toString()
             flat.floor = dialogView.flatFloor.text.toString().toInt()
 
-            scope.launch {
-                try {
-                    withContext(Dispatchers.IO) {
-                        val response = repository.updateFlat(flat.id!!, flat)
-                        val temp = flatsList.value
-                        val index = temp!!.indexOfFirst { (id) -> id == response.id }
-                        temp[index] = response
-                        flatsList.postValue(temp)
+            viewModel.updateFlat(flat).observe(viewLifecycleOwner) { resource ->
+                if (resource != null) {
+                    when (resource) {
+                        is Resource.Success -> {
+                            dialog.hide()
+                            dialogView.prgIndicator.visibility = View.GONE
+                            dialogView.deleteFlat.isEnabled = true
+                            dialogView.saveFlat.isEnabled = true
+                        }
+                        is Resource.Error -> {
+                            Toast.makeText(
+                                requireContext(),
+                                resource.message,
+                                Toast.LENGTH_LONG
+                            ).show()
+                            dialogView.prgIndicator.visibility = View.GONE
+                            dialogView.deleteFlat.isEnabled = true
+                            dialogView.saveFlat.isEnabled = true
+                        }
+                        is Resource.Loading -> {
+                            dialogView.prgIndicator.visibility = View.VISIBLE
+                            dialogView.deleteFlat.isEnabled = false
+                            dialogView.saveFlat.isEnabled = false
+                        }
                     }
-                    flatsViewAdapter.notifyDataSetChanged()
-                    dialog.hide()
-                } catch (e: HttpException) {
-                    Toast.makeText(
-                        requireContext(),
-                        "Error saving flat.",
-                        Toast.LENGTH_SHORT
-                    )
-                        .show()
-                } catch (t: SocketTimeoutException) {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.connection_timeout),
-                        Toast.LENGTH_LONG
-                    )
-                        .show()
-                } catch (d: UnknownHostException) {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.unknown_host),
-                        Toast.LENGTH_LONG
-                    )
-                        .show()
-                } finally {
-                    dialogView.prgIndicator.visibility = View.GONE
-                    dialogView.saveFlat.isEnabled = true
-                    dialogView.deleteFlat.isEnabled = true
                 }
             }
         }

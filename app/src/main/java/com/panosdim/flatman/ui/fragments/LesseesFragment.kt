@@ -11,13 +11,13 @@ import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.datepicker.CalendarConstraints
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.panosdim.flatman.R
-import com.panosdim.flatman.flatsList
 import com.panosdim.flatman.lesseesList
 import com.panosdim.flatman.model.Flat
 import com.panosdim.flatman.model.Lessee
@@ -25,6 +25,7 @@ import com.panosdim.flatman.repository
 import com.panosdim.flatman.rest.data.CheckTinResponse
 import com.panosdim.flatman.ui.adapters.LesseesAdapter
 import com.panosdim.flatman.utils.*
+import com.panosdim.flatman.viewmodel.FlatViewModel
 import kotlinx.android.synthetic.main.dialog_lessee.view.*
 import kotlinx.android.synthetic.main.fragment_lessees.view.*
 import kotlinx.coroutines.CoroutineScope
@@ -39,6 +40,7 @@ import java.time.temporal.TemporalAdjusters
 
 
 class LesseesFragment : Fragment() {
+    private val flatViewModel: FlatViewModel by viewModels()
     private lateinit var dialog: BottomSheetDialog
     private lateinit var dialogView: View
     private lateinit var rootView: View
@@ -159,8 +161,8 @@ class LesseesFragment : Fragment() {
             deleteLessee()
         }
 
-        flatsList.observe(viewLifecycleOwner, {
-            if (it != null && it.size > 0) {
+        flatViewModel.flats.observe(viewLifecycleOwner, {
+            if (it != null && it.isNotEmpty()) {
                 rootView.addNewLessee.isEnabled = true
                 flatSelectAdapter = ArrayAdapter(requireContext(), R.layout.list_item, it)
                 rootView.selectedFlat.setAdapter(flatSelectAdapter)
@@ -189,7 +191,7 @@ class LesseesFragment : Fragment() {
 
     private fun updateLesseeAdapter() {
         val temp = lesseesList.filter {
-            it.flatId == selectedFlat!!.id
+            it.flatId == selectedFlat?.id ?: -1
         }
         rootView.rvLessees.adapter =
             LesseesAdapter(temp) { lesseeItem: Lessee -> lesseeItemClicked(lesseeItem) }

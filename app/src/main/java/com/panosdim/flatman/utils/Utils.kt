@@ -7,9 +7,14 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Environment
+import android.text.Editable
+import android.text.TextWatcher
 import androidx.core.content.ContextCompat
 import androidx.core.content.pm.PackageInfoCompat
-import com.panosdim.flatman.*
+import com.panosdim.flatman.App
+import com.panosdim.flatman.BACKEND_URL
+import com.panosdim.flatman.balanceList
+import com.panosdim.flatman.lesseesList
 import com.panosdim.flatman.ui.login.LoginActivity
 import org.json.JSONObject
 import retrofit2.HttpException
@@ -24,8 +29,6 @@ var refId: Long = -1
 
 suspend fun downloadData(context: Context) {
     try {
-        val responseFlats = App.repository.getAllFlats()
-        flatsList.postValue(responseFlats.toMutableList())
 
         val responseLessees = App.repository.getAllLessees()
         lesseesList.clear()
@@ -105,4 +108,20 @@ private fun downloadNewVersion(context: Context, version: String) {
         "FlatMan-${version}.apk"
     )
     refId = manager.enqueue(request)
+}
+
+fun generateTextWatcher(validateFunc: () -> Unit): TextWatcher {
+    return object : TextWatcher {
+        override fun afterTextChanged(editable: Editable?) {
+            validateFunc()
+        }
+
+        override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
+            // Not required
+        }
+
+        override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+            // Not required
+        }
+    }
 }

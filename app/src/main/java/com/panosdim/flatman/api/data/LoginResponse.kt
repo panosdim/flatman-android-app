@@ -1,4 +1,4 @@
-package com.panosdim.flatman.rest.data
+package com.panosdim.flatman.api.data
 
 import com.panosdim.flatman.model.User
 

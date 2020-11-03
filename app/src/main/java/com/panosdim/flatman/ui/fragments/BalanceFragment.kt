@@ -1,9 +1,7 @@
 package com.panosdim.flatman.ui.fragments
 
 import android.os.Bundle
-import android.text.Editable
 import android.text.InputFilter
-import android.text.TextWatcher
 import android.view.*
 import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
@@ -15,22 +13,16 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.datepicker.CalendarConstraints
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.panosdim.flatman.R
-import com.panosdim.flatman.balanceList
+import com.panosdim.flatman.api.data.Resource
 import com.panosdim.flatman.model.Balance
 import com.panosdim.flatman.model.Flat
-import com.panosdim.flatman.repository
 import com.panosdim.flatman.ui.adapters.BalanceAdapter
 import com.panosdim.flatman.utils.*
+import com.panosdim.flatman.viewmodel.BalanceViewModel
 import com.panosdim.flatman.viewmodel.FlatViewModel
 import kotlinx.android.synthetic.main.dialog_balance.view.*
+import kotlinx.android.synthetic.main.fragment_balance.*
 import kotlinx.android.synthetic.main.fragment_balance.view.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import retrofit2.HttpException
-import java.net.SocketTimeoutException
-import java.net.UnknownHostException
 import java.time.LocalDate
 
 
@@ -42,24 +34,51 @@ class BalanceFragment : Fragment() {
     private var balance: Balance? = null
     private var selectedFlat: Flat? = null
     private lateinit var flatSelectAdapter: ArrayAdapter<Flat>
-    private val scope = CoroutineScope(Dispatchers.Main)
-    private val textWatcher = object : TextWatcher {
-        override fun afterTextChanged(editable: Editable?) {
-            validateForm()
-        }
-
-        override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
-            // Not Needed
-        }
-
-        override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-            // Not Needed
-        }
-    }
+    private val viewModel: BalanceViewModel by viewModels()
+    private val textWatcher = generateTextWatcher(::validateForm)
 
     private fun balanceItemClicked(balanceItem: Balance) {
         balance = balanceItem
         showForm(balance)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        viewModel.getAllBalance().observe(viewLifecycleOwner) { resource ->
+            if (resource != null) {
+                when (resource) {
+                    is Resource.Success -> {
+                        progress_bar.visibility = View.GONE
+                        rvBalance.visibility = View.VISIBLE
+                        updateBalanceAdapter()
+                        viewModel.getAllBalance().removeObservers(viewLifecycleOwner)
+                    }
+                    is Resource.Error -> {
+                        Toast.makeText(
+                            requireContext(),
+                            resource.message,
+                            Toast.LENGTH_LONG
+                        ).show()
+                        progress_bar.visibility = View.GONE
+                        rvBalance.visibility = View.VISIBLE
+                    }
+                    is Resource.Loading -> {
+                        progress_bar.visibility = View.VISIBLE
+                        rvBalance.visibility = View.GONE
+                    }
+                }
+            }
+        }
+
+        viewModel.balance.observe(viewLifecycleOwner) {
+            updateBalanceAdapter()
+        }
+
+        swipe_refresh.setOnRefreshListener {
+            viewModel.refreshBalance()
+            swipe_refresh.isRefreshing = false
+        }
     }
 
     override fun onCreateView(
@@ -82,7 +101,11 @@ class BalanceFragment : Fragment() {
 
         dialogView.balanceComment.setOnEditorActionListener { _, actionId, event ->
             if (isFormValid() && (event != null && event.keyCode == KeyEvent.KEYCODE_ENTER || actionId == EditorInfo.IME_ACTION_DONE)) {
-                saveBalance()
+                balance?.let {
+                    updateBalance(it)
+                } ?: kotlin.run {
+                    saveBalance()
+                }
             }
             false
         }
@@ -164,84 +187,57 @@ class BalanceFragment : Fragment() {
             updateBalanceAdapter()
         }
 
-        balanceList.observe(viewLifecycleOwner, {
-            updateBalanceAdapter()
-        })
-
         return rootView
     }
 
     private fun updateBalanceAdapter() {
-        val temp = balanceList.value!!.filter {
-            it.flatId == selectedFlat?.id ?: -1
-        }.sortedByDescending { it.date }
-        rootView.rvBalance.adapter =
-            BalanceAdapter(temp) { balanceItem: Balance -> balanceItemClicked(balanceItem) }
-        (rootView.rvBalance.adapter as BalanceAdapter).notifyDataSetChanged()
+        val data = viewModel.balance.value
+        if (data != null) {
+            val temp = data.filter {
+                it.flatId == selectedFlat?.id ?: -1
+            }.sortedByDescending { it.date }
+            rootView.rvBalance.adapter =
+                BalanceAdapter(temp) { balanceItem: Balance -> balanceItemClicked(balanceItem) }
+            (rootView.rvBalance.adapter as BalanceAdapter).notifyDataSetChanged()
+        } else {
+            rootView.rvBalance.adapter =
+                BalanceAdapter(mutableListOf()) { balanceItem: Balance ->
+                    balanceItemClicked(
+                        balanceItem
+                    )
+                }
+            (rootView.rvBalance.adapter as BalanceAdapter).notifyDataSetChanged()
+        }
+
     }
 
     private fun deleteBalance() {
         balance?.let {
-            scope.launch {
-                dialogView.prgIndicator.visibility = View.VISIBLE
-                dialogView.deleteBalance.isEnabled = false
-                dialogView.saveBalance.isEnabled = false
-                try {
-                    withContext(Dispatchers.IO) {
-                        val response = repository.deleteBalance(it.id!!)
-                        when (response.code()) {
-                            204 -> {
-                                val temp = balanceList.value
-                                temp!!.remove(it)
-                                balanceList.postValue(temp)
-                            }
-                            404 -> {
-                                Toast.makeText(
-                                    requireContext(),
-                                    "Error deleting balance. Balance not found.",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                                dialogView.prgIndicator.visibility = View.GONE
-                                dialogView.deleteBalance.isEnabled = true
-                                dialogView.saveBalance.isEnabled = true
-                            }
-                            else -> {
-                                Toast.makeText(
-                                    requireContext(),
-                                    "Error deleting balance. Unknown Error.",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                                dialogView.prgIndicator.visibility = View.GONE
-                                dialogView.deleteBalance.isEnabled = true
-                                dialogView.saveBalance.isEnabled = true
-                            }
+            viewModel.removeBalance(it).observe(viewLifecycleOwner) { resource ->
+                if (resource != null) {
+                    when (resource) {
+                        is Resource.Success -> {
+                            dialog.hide()
+                            dialogView.prgIndicator.visibility = View.GONE
+                            dialogView.deleteBalance.isEnabled = true
+                            dialogView.saveBalance.isEnabled = true
+                        }
+                        is Resource.Error -> {
+                            Toast.makeText(
+                                requireContext(),
+                                resource.message,
+                                Toast.LENGTH_LONG
+                            ).show()
+                            dialogView.prgIndicator.visibility = View.GONE
+                            dialogView.deleteBalance.isEnabled = true
+                            dialogView.saveBalance.isEnabled = true
+                        }
+                        is Resource.Loading -> {
+                            dialogView.prgIndicator.visibility = View.VISIBLE
+                            dialogView.deleteBalance.isEnabled = false
+                            dialogView.saveBalance.isEnabled = false
                         }
                     }
-                    dialog.hide()
-                } catch (ex: HttpException) {
-                    Toast.makeText(
-                        requireContext(),
-                        "Error deleting balance.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                } catch (t: SocketTimeoutException) {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.connection_timeout),
-                        Toast.LENGTH_LONG
-                    )
-                        .show()
-                } catch (d: UnknownHostException) {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.unknown_host),
-                        Toast.LENGTH_LONG
-                    )
-                        .show()
-                } finally {
-                    dialogView.prgIndicator.visibility = View.GONE
-                    dialogView.saveBalance.isEnabled = true
-                    dialogView.deleteBalance.isEnabled = true
                 }
             }
         }
@@ -256,36 +252,31 @@ class BalanceFragment : Fragment() {
             dialogView.balanceAmount.text.toString().toFloat()
         )
 
-        scope.launch {
-            try {
-                withContext(Dispatchers.IO) {
-                    val response = repository.createNewBalance(newBalance)
-                    val temp = balanceList.value
-                    temp?.add(response)
-                    balanceList.postValue(temp)
+        viewModel.addBalance(newBalance).observe(viewLifecycleOwner) { resource ->
+            if (resource != null) {
+                when (resource) {
+                    is Resource.Success -> {
+                        dialog.hide()
+                        dialogView.prgIndicator.visibility = View.GONE
+                        dialogView.deleteBalance.isEnabled = true
+                        dialogView.saveBalance.isEnabled = true
+                    }
+                    is Resource.Error -> {
+                        Toast.makeText(
+                            requireContext(),
+                            resource.message,
+                            Toast.LENGTH_LONG
+                        ).show()
+                        dialogView.prgIndicator.visibility = View.GONE
+                        dialogView.deleteBalance.isEnabled = true
+                        dialogView.saveBalance.isEnabled = true
+                    }
+                    is Resource.Loading -> {
+                        dialogView.prgIndicator.visibility = View.VISIBLE
+                        dialogView.deleteBalance.isEnabled = false
+                        dialogView.saveBalance.isEnabled = false
+                    }
                 }
-                dialog.hide()
-            } catch (e: HttpException) {
-                Toast.makeText(requireContext(), "Error saving balance.", Toast.LENGTH_SHORT)
-                    .show()
-            } catch (t: SocketTimeoutException) {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.connection_timeout),
-                    Toast.LENGTH_LONG
-                )
-                    .show()
-            } catch (d: UnknownHostException) {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.unknown_host),
-                    Toast.LENGTH_LONG
-                )
-                    .show()
-            } finally {
-                dialogView.prgIndicator.visibility = View.GONE
-                dialogView.saveBalance.isEnabled = true
-                dialogView.deleteBalance.isEnabled = true
             }
         }
     }
@@ -303,41 +294,31 @@ class BalanceFragment : Fragment() {
             balance.amount = dialogView.balanceAmount.text.toString().toFloat()
             balance.comment = dialogView.balanceComment.text.toString()
 
-            scope.launch {
-                try {
-                    withContext(Dispatchers.IO) {
-                        val response = repository.updateBalance(balance.id!!, balance)
-                        val temp = balanceList.value
-                        val index = temp!!.indexOfFirst { (id) -> id == response.id }
-                        temp[index] = response
-                        balanceList.postValue(temp)
+            viewModel.updateBalance(balance).observe(viewLifecycleOwner) { resource ->
+                if (resource != null) {
+                    when (resource) {
+                        is Resource.Success -> {
+                            dialog.hide()
+                            dialogView.prgIndicator.visibility = View.GONE
+                            dialogView.deleteBalance.isEnabled = true
+                            dialogView.saveBalance.isEnabled = true
+                        }
+                        is Resource.Error -> {
+                            Toast.makeText(
+                                requireContext(),
+                                resource.message,
+                                Toast.LENGTH_LONG
+                            ).show()
+                            dialogView.prgIndicator.visibility = View.GONE
+                            dialogView.deleteBalance.isEnabled = true
+                            dialogView.saveBalance.isEnabled = true
+                        }
+                        is Resource.Loading -> {
+                            dialogView.prgIndicator.visibility = View.VISIBLE
+                            dialogView.deleteBalance.isEnabled = false
+                            dialogView.saveBalance.isEnabled = false
+                        }
                     }
-                    dialog.hide()
-                } catch (e: HttpException) {
-                    Toast.makeText(
-                        requireContext(),
-                        "Error saving balance.",
-                        Toast.LENGTH_SHORT
-                    )
-                        .show()
-                } catch (t: SocketTimeoutException) {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.connection_timeout),
-                        Toast.LENGTH_LONG
-                    )
-                        .show()
-                } catch (d: UnknownHostException) {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.unknown_host),
-                        Toast.LENGTH_LONG
-                    )
-                        .show()
-                } finally {
-                    dialogView.prgIndicator.visibility = View.GONE
-                    dialogView.saveBalance.isEnabled = true
-                    dialogView.deleteBalance.isEnabled = true
                 }
             }
         }

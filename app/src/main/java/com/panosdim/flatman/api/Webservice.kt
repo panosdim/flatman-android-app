@@ -1,21 +1,17 @@
-package com.panosdim.flatman.rest
+package com.panosdim.flatman.api
 
+import com.panosdim.flatman.api.data.CheckTinResponse
+import com.panosdim.flatman.api.data.LoginRequest
+import com.panosdim.flatman.api.data.LoginResponse
 import com.panosdim.flatman.model.Balance
 import com.panosdim.flatman.model.Flat
 import com.panosdim.flatman.model.Lessee
-import com.panosdim.flatman.rest.data.CheckTinResponse
-import com.panosdim.flatman.rest.data.LoginRequest
-import com.panosdim.flatman.rest.data.LoginResponse
-import com.panosdim.flatman.rest.data.UserResponse
 import retrofit2.Response
 import retrofit2.http.*
 
 interface Webservice {
     @POST("/login")
     suspend fun login(@Body request: LoginRequest): LoginResponse
-
-    @GET("/user")
-    suspend fun user(): UserResponse
 
     @GET("/checkTin/{tin}")
     suspend fun checkTin(@Path("tin") tin: String): CheckTinResponse

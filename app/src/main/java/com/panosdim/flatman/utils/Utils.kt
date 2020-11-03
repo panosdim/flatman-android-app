@@ -11,13 +11,8 @@ import android.text.Editable
 import android.text.TextWatcher
 import androidx.core.content.ContextCompat
 import androidx.core.content.pm.PackageInfoCompat
-import com.panosdim.flatman.App
 import com.panosdim.flatman.BACKEND_URL
-import com.panosdim.flatman.balanceList
-import com.panosdim.flatman.lesseesList
-import com.panosdim.flatman.ui.login.LoginActivity
 import org.json.JSONObject
-import retrofit2.HttpException
 import java.io.BufferedReader
 import java.net.HttpURLConnection
 import java.net.URL
@@ -26,23 +21,6 @@ import java.text.DecimalFormatSymbols
 import javax.net.ssl.HttpsURLConnection
 
 var refId: Long = -1
-
-suspend fun downloadData(context: Context) {
-    try {
-
-        val responseLessees = App.repository.getAllLessees()
-        lesseesList.clear()
-        lesseesList.addAll(responseLessees)
-
-        val responseBalance = App.repository.getAllBalance()
-        balanceList.postValue(responseBalance.toMutableList())
-    } catch (e: HttpException) {
-        val intent = Intent(context, LoginActivity::class.java)
-        intent.flags =
-            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        context.startActivity(intent)
-    }
-}
 
 fun moneyFormat(obj: Any): String {
     val symbols = DecimalFormatSymbols()
@@ -124,4 +102,11 @@ fun generateTextWatcher(validateFunc: () -> Unit): TextWatcher {
             // Not required
         }
     }
+}
+
+fun <T> startIntent(context: Context, cls: Class<T>) {
+    val intent = Intent(context, cls)
+    intent.flags =
+        Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+    context.startActivity(intent)
 }

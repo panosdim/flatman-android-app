@@ -4,24 +4,28 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.panosdim.flatman.R
-import com.panosdim.flatman.balanceList
+import com.panosdim.flatman.api.data.Resource
 import com.panosdim.flatman.model.Balance
 import com.panosdim.flatman.utils.MyValueFormatter
 import com.panosdim.flatman.utils.MyXAxisFormatter
 import com.panosdim.flatman.utils.moneyFormat
+import com.panosdim.flatman.viewmodel.BalanceViewModel
+import kotlinx.android.synthetic.main.fragment_dashboard.*
 import kotlin.math.abs
 
 
 class DashboardFragment : Fragment() {
     private lateinit var chartData: List<Entry>
+    private val viewModel: BalanceViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -29,31 +33,71 @@ class DashboardFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         val root = inflater.inflate(R.layout.fragment_dashboard, container, false)
-
-        val totalIncome: TextView = root.findViewById(R.id.total_income)
-        val totalExpenses: TextView = root.findViewById(R.id.total_expenses)
-        val totalSavings: TextView = root.findViewById(R.id.total_savings)
         val chart: LineChart = root.findViewById(R.id.chart)
 
-        balanceList.observe(viewLifecycleOwner, { bal ->
-            val balList = bal.map { it.copy() }
-            val totInc = balList.map { it.amount }.reduce { tot, next ->
-                if (next > 0) tot + next else tot
+        viewModel.balance.observe(viewLifecycleOwner, { bal ->
+            if (bal != null && bal.isNotEmpty()) {
+                updateDashboard(bal, chart)
             }
-
-            val totExp = balList.map { it.amount }.reduce { tot, next ->
-                if (next < 0) tot + next else tot
-            }
-            val totSav = totInc - abs(totExp)
-            totalIncome.text = moneyFormat(totInc)
-            totalExpenses.text = moneyFormat(abs(totExp))
-            totalSavings.text = moneyFormat(totSav)
-
-            chartData = calculateChartData(balList)
-            initializeChart(chart)
         })
 
         return root
+    }
+
+    private fun updateDashboard(
+        bal: List<Balance>,
+        chart: LineChart
+    ) {
+        val balList = bal.map { it.copy() }
+        val totInc = balList.map { it.amount }.reduce { tot, next ->
+            if (next > 0) tot + next else tot
+        }
+
+        val totExp = balList.map { it.amount }.reduce { tot, next ->
+            if (next < 0) tot + next else tot
+        }
+        val totSav = totInc - abs(totExp)
+        total_income.text = moneyFormat(totInc)
+        total_expenses.text = moneyFormat(abs(totExp))
+        total_savings.text = moneyFormat(totSav)
+
+        chartData = calculateChartData(balList)
+        initializeChart(chart)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        viewModel.getAllBalance().observe(viewLifecycleOwner) { resource ->
+            if (resource != null) {
+                when (resource) {
+                    is Resource.Success -> {
+                        resource.data?.let {
+                            if (it.isNotEmpty()) {
+                                updateDashboard(it, chart)
+                            }
+                        }
+                        progress_bar.visibility = View.GONE
+                        ll_dashboard.visibility = View.VISIBLE
+
+                        viewModel.getAllBalance().removeObservers(viewLifecycleOwner)
+                    }
+                    is Resource.Error -> {
+                        Toast.makeText(
+                            requireContext(),
+                            resource.message,
+                            Toast.LENGTH_LONG
+                        ).show()
+                        progress_bar.visibility = View.GONE
+                        ll_dashboard.visibility = View.VISIBLE
+                    }
+                    is Resource.Loading -> {
+                        progress_bar.visibility = View.VISIBLE
+                        ll_dashboard.visibility = View.GONE
+                    }
+                }
+            }
+        }
     }
 
     private fun initializeChart(chart: LineChart) {

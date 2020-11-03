@@ -1,8 +1,6 @@
 package com.panosdim.flatman.ui.fragments
 
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
@@ -18,23 +16,16 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.datepicker.CalendarConstraints
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.panosdim.flatman.R
-import com.panosdim.flatman.lesseesList
+import com.panosdim.flatman.api.data.Resource
 import com.panosdim.flatman.model.Flat
 import com.panosdim.flatman.model.Lessee
-import com.panosdim.flatman.repository
-import com.panosdim.flatman.rest.data.CheckTinResponse
 import com.panosdim.flatman.ui.adapters.LesseesAdapter
 import com.panosdim.flatman.utils.*
 import com.panosdim.flatman.viewmodel.FlatViewModel
+import com.panosdim.flatman.viewmodel.LesseeViewModel
 import kotlinx.android.synthetic.main.dialog_lessee.view.*
+import kotlinx.android.synthetic.main.fragment_lessees.*
 import kotlinx.android.synthetic.main.fragment_lessees.view.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import retrofit2.HttpException
-import java.net.SocketTimeoutException
-import java.net.UnknownHostException
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
 
@@ -47,25 +38,52 @@ class LesseesFragment : Fragment() {
     private var lessee: Lessee? = null
     private var selectedFlat: Flat? = null
     private lateinit var flatSelectAdapter: ArrayAdapter<Flat>
-    private val scope = CoroutineScope(Dispatchers.Main)
     private val postalCodeRegex = """^[12345678][0-9]{4}$""".toRegex()
-    private val textWatcher = object : TextWatcher {
-        override fun afterTextChanged(editable: Editable?) {
-            validateForm()
-        }
-
-        override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
-            // Not Needed
-        }
-
-        override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-            // Not Needed
-        }
-    }
+    private val viewModel: LesseeViewModel by viewModels()
+    private val textWatcher = generateTextWatcher(::validateForm)
 
     private fun lesseeItemClicked(lesseeItem: Lessee) {
         lessee = lesseeItem
         showForm(lessee)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        viewModel.getAllLessee().observe(viewLifecycleOwner) { resource ->
+            if (resource != null) {
+                when (resource) {
+                    is Resource.Success -> {
+                        progress_bar.visibility = View.GONE
+                        rvLessees.visibility = View.VISIBLE
+                        updateLesseeAdapter()
+                        viewModel.getAllLessee().removeObservers(viewLifecycleOwner)
+                    }
+                    is Resource.Error -> {
+                        Toast.makeText(
+                            requireContext(),
+                            resource.message,
+                            Toast.LENGTH_LONG
+                        ).show()
+                        progress_bar.visibility = View.GONE
+                        rvLessees.visibility = View.VISIBLE
+                    }
+                    is Resource.Loading -> {
+                        progress_bar.visibility = View.VISIBLE
+                        rvLessees.visibility = View.GONE
+                    }
+                }
+            }
+        }
+
+        viewModel.lessee.observe(viewLifecycleOwner) {
+            updateLesseeAdapter()
+        }
+
+        swipe_refresh.setOnRefreshListener {
+            viewModel.refreshLessee()
+            swipe_refresh.isRefreshing = false
+        }
     }
 
     override fun onCreateView(
@@ -96,7 +114,11 @@ class LesseesFragment : Fragment() {
 
         dialogView.lesseeRent.setOnEditorActionListener { _, actionId, event ->
             if (isFormValid() && (event != null && event.keyCode == KeyEvent.KEYCODE_ENTER || actionId == EditorInfo.IME_ACTION_DONE)) {
-                saveLessee()
+                lessee?.let {
+                    updateLessee(it)
+                } ?: kotlin.run {
+                    saveLessee()
+                }
             }
             false
         }
@@ -190,75 +212,48 @@ class LesseesFragment : Fragment() {
     }
 
     private fun updateLesseeAdapter() {
-        val temp = lesseesList.filter {
-            it.flatId == selectedFlat?.id ?: -1
+        val data = viewModel.lessee.value
+        if (data != null) {
+            val temp = data.filter {
+                it.flatId == selectedFlat?.id ?: -1
+            }
+            rootView.rvLessees.adapter =
+                LesseesAdapter(temp) { lesseeItem: Lessee -> lesseeItemClicked(lesseeItem) }
+            (rootView.rvLessees.adapter as LesseesAdapter).notifyDataSetChanged()
+        } else {
+            rootView.rvLessees.adapter =
+                LesseesAdapter(mutableListOf()) { lesseeItem: Lessee -> lesseeItemClicked(lesseeItem) }
+            (rootView.rvLessees.adapter as LesseesAdapter).notifyDataSetChanged()
         }
-        rootView.rvLessees.adapter =
-            LesseesAdapter(temp) { lesseeItem: Lessee -> lesseeItemClicked(lesseeItem) }
-        (rootView.rvLessees.adapter as LesseesAdapter).notifyDataSetChanged()
     }
 
     private fun deleteLessee() {
         lessee?.let {
-            scope.launch {
-                dialogView.prgIndicator.visibility = View.VISIBLE
-                dialogView.deleteLessee.isEnabled = false
-                dialogView.saveLessee.isEnabled = false
-                try {
-                    withContext(Dispatchers.IO) {
-                        val response = repository.deleteLessee(it.id!!)
-                        when (response.code()) {
-                            204 -> {
-                                lesseesList.remove(it)
-                            }
-                            404 -> {
-                                Toast.makeText(
-                                    requireContext(),
-                                    "Error deleting lessee. Lessee not found.",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                                dialogView.prgIndicator.visibility = View.GONE
-                                dialogView.deleteLessee.isEnabled = true
-                                dialogView.saveLessee.isEnabled = true
-                            }
-                            else -> {
-                                Toast.makeText(
-                                    requireContext(),
-                                    "Error deleting lessee. Unknown Error.",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                                dialogView.prgIndicator.visibility = View.GONE
-                                dialogView.deleteLessee.isEnabled = true
-                                dialogView.saveLessee.isEnabled = true
-                            }
+            viewModel.removeLessee(it).observe(viewLifecycleOwner) { resource ->
+                if (resource != null) {
+                    when (resource) {
+                        is Resource.Success -> {
+                            dialog.hide()
+                            dialogView.prgIndicator.visibility = View.GONE
+                            dialogView.deleteLessee.isEnabled = true
+                            dialogView.saveLessee.isEnabled = true
+                        }
+                        is Resource.Error -> {
+                            Toast.makeText(
+                                requireContext(),
+                                resource.message,
+                                Toast.LENGTH_LONG
+                            ).show()
+                            dialogView.prgIndicator.visibility = View.GONE
+                            dialogView.deleteLessee.isEnabled = true
+                            dialogView.saveLessee.isEnabled = true
+                        }
+                        is Resource.Loading -> {
+                            dialogView.prgIndicator.visibility = View.VISIBLE
+                            dialogView.deleteLessee.isEnabled = false
+                            dialogView.saveLessee.isEnabled = false
                         }
                     }
-                    updateLesseeAdapter()
-                    dialog.hide()
-                } catch (ex: HttpException) {
-                    Toast.makeText(
-                        requireContext(),
-                        "Error deleting lessee.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                } catch (t: SocketTimeoutException) {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.connection_timeout),
-                        Toast.LENGTH_LONG
-                    )
-                        .show()
-                } catch (d: UnknownHostException) {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.unknown_host),
-                        Toast.LENGTH_LONG
-                    )
-                        .show()
-                } finally {
-                    dialogView.prgIndicator.visibility = View.GONE
-                    dialogView.saveLessee.isEnabled = true
-                    dialogView.deleteLessee.isEnabled = true
                 }
             }
         }
@@ -277,35 +272,31 @@ class LesseesFragment : Fragment() {
             dialogView.lesseeTIN.text.toString().toInt()
         )
 
-        scope.launch {
-            try {
-                withContext(Dispatchers.IO) {
-                    val response = repository.createNewLessee(newLessee)
-                    lesseesList.add(response)
+        viewModel.addLessee(newLessee).observe(viewLifecycleOwner) { resource ->
+            if (resource != null) {
+                when (resource) {
+                    is Resource.Success -> {
+                        dialog.hide()
+                        dialogView.prgIndicator.visibility = View.GONE
+                        dialogView.deleteLessee.isEnabled = true
+                        dialogView.saveLessee.isEnabled = true
+                    }
+                    is Resource.Error -> {
+                        Toast.makeText(
+                            requireContext(),
+                            resource.message,
+                            Toast.LENGTH_LONG
+                        ).show()
+                        dialogView.prgIndicator.visibility = View.GONE
+                        dialogView.deleteLessee.isEnabled = true
+                        dialogView.saveLessee.isEnabled = true
+                    }
+                    is Resource.Loading -> {
+                        dialogView.prgIndicator.visibility = View.VISIBLE
+                        dialogView.deleteLessee.isEnabled = false
+                        dialogView.saveLessee.isEnabled = false
+                    }
                 }
-                updateLesseeAdapter()
-                dialog.hide()
-            } catch (e: HttpException) {
-                Toast.makeText(requireContext(), "Error saving lessee.", Toast.LENGTH_SHORT)
-                    .show()
-            } catch (t: SocketTimeoutException) {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.connection_timeout),
-                    Toast.LENGTH_LONG
-                )
-                    .show()
-            } catch (d: UnknownHostException) {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.unknown_host),
-                    Toast.LENGTH_LONG
-                )
-                    .show()
-            } finally {
-                dialogView.prgIndicator.visibility = View.GONE
-                dialogView.saveLessee.isEnabled = true
-                dialogView.deleteLessee.isEnabled = true
             }
         }
     }
@@ -331,40 +322,31 @@ class LesseesFragment : Fragment() {
             lessee.rent = dialogView.lesseeRent.text.toString().toInt()
             lessee.tin = dialogView.lesseeTIN.text.toString().toInt()
 
-            scope.launch {
-                try {
-                    withContext(Dispatchers.IO) {
-                        val response = repository.updateLessee(lessee.id!!, lessee)
-                        val index = lesseesList.indexOfFirst { (id) -> id == response.id }
-                        lesseesList[index] = response
+            viewModel.updateLessee(lessee).observe(viewLifecycleOwner) { resource ->
+                if (resource != null) {
+                    when (resource) {
+                        is Resource.Success -> {
+                            dialog.hide()
+                            dialogView.prgIndicator.visibility = View.GONE
+                            dialogView.deleteLessee.isEnabled = true
+                            dialogView.saveLessee.isEnabled = true
+                        }
+                        is Resource.Error -> {
+                            Toast.makeText(
+                                requireContext(),
+                                resource.message,
+                                Toast.LENGTH_LONG
+                            ).show()
+                            dialogView.prgIndicator.visibility = View.GONE
+                            dialogView.deleteLessee.isEnabled = true
+                            dialogView.saveLessee.isEnabled = true
+                        }
+                        is Resource.Loading -> {
+                            dialogView.prgIndicator.visibility = View.VISIBLE
+                            dialogView.deleteLessee.isEnabled = false
+                            dialogView.saveLessee.isEnabled = false
+                        }
                     }
-                    updateLesseeAdapter()
-                    dialog.hide()
-                } catch (e: HttpException) {
-                    Toast.makeText(
-                        requireContext(),
-                        "Error saving lessee.",
-                        Toast.LENGTH_SHORT
-                    )
-                        .show()
-                } catch (t: SocketTimeoutException) {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.connection_timeout),
-                        Toast.LENGTH_LONG
-                    )
-                        .show()
-                } catch (d: UnknownHostException) {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.unknown_host),
-                        Toast.LENGTH_LONG
-                    )
-                        .show()
-                } finally {
-                    dialogView.prgIndicator.visibility = View.GONE
-                    dialogView.saveLessee.isEnabled = true
-                    dialogView.deleteLessee.isEnabled = true
                 }
             }
         }
@@ -418,16 +400,14 @@ class LesseesFragment : Fragment() {
         }
 
         if (tin.length == 9) {
-            scope.launch {
-                lateinit var response: CheckTinResponse
-                withContext(Dispatchers.IO) {
-                    response = repository.checkTin(tin)
-                }
-                if (!(response.validStructure && response.validSyntax)) {
-                    lesseeTIN.error = getString(R.string.error_tin)
-                    saveLessee.isEnabled = false
-                }
+            val response = viewModel.checkTin(tin)
+            if (response == null || !(response.validStructure && response.validSyntax)) {
+                lesseeTIN.error = getString(R.string.error_tin)
+                saveLessee.isEnabled = false
             }
+        } else {
+            lesseeTIN.error = getString(R.string.error_tin_length)
+            saveLessee.isEnabled = false
         }
 
         if (rent.isEmpty()) {

@@ -17,15 +17,23 @@ import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.panosdim.flatman.R
 import com.panosdim.flatman.RC
+import com.panosdim.flatman.api.Webservice
+import com.panosdim.flatman.api.data.LoginRequest
+import com.panosdim.flatman.api.webservice
+import com.panosdim.flatman.prefs
 import com.panosdim.flatman.utils.checkForNewVersion
 import com.panosdim.flatman.utils.refId
+import com.panosdim.flatman.utils.startIntent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import retrofit2.HttpException
 
 class MainActivity : AppCompatActivity() {
     private lateinit var manager: DownloadManager
     private lateinit var onComplete: BroadcastReceiver
+    private var client: Webservice = webservice
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,7 +89,31 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // TODO: Refresh stored token
-        println("TEST")
+
+        refreshToken()
+    }
+
+    private fun refreshToken() {
+        if (prefs.email.isNotEmpty() and prefs.password.isNotEmpty()) {
+            val scope = CoroutineScope(Dispatchers.Main)
+
+            scope.launch {
+                try {
+                    withContext(Dispatchers.IO) {
+                        val response =
+                            client.login(
+                                LoginRequest(
+                                    prefs.email, prefs.password
+                                )
+                            )
+                        prefs.token = response.token
+                    }
+                } catch (e: HttpException) {
+                    startIntent(this@MainActivity, LoginActivity::class.java)
+                }
+            }
+        } else {
+            startIntent(this, LoginActivity::class.java)
+        }
     }
 }

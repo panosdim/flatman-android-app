@@ -7,10 +7,25 @@
     android:paddingBottom="64dp"
     tools:context=".ui.fragments.FlatsFragment">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvFlats"
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvFlats"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        style="?android:progressBarStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/addNewFlat"
@@ -21,5 +36,6 @@
         android:src="@drawable/ic_add_white_24dp"
         android:visibility="visible"
         app:backgroundTint="@color/secondaryColor"
-        app:fabSize="normal" />
+        app:fabSize="normal"
+        android:contentDescription="@string/add_new" />
 </FrameLayout>

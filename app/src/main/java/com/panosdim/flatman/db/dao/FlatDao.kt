@@ -7,26 +7,29 @@ import com.panosdim.flatman.model.Flat
 @Dao
 interface FlatDao {
     @Query("SELECT * FROM Flat")
-    fun getAll(): LiveData<List<Flat>>
+    suspend fun get(): List<Flat>
+
+    @Query("SELECT * FROM Flat")
+    fun getLiveData(): LiveData<List<Flat>>
 
     @Insert
-    fun insert(flat: Flat)
+    suspend fun insert(flat: Flat)
 
     @Update
-    fun update(flat: Flat)
+    suspend fun update(flat: Flat)
 
     @Delete
-    fun delete(flat: Flat)
+    suspend fun delete(flat: Flat)
 
     @Transaction
-    fun deleteAndCreate(flats: List<Flat>) {
+    suspend fun deleteAndCreate(flats: List<Flat>) {
         deleteAll()
         insertAll(flats)
     }
 
     @Query("DELETE FROM Flat")
-    fun deleteAll()
+    suspend fun deleteAll()
 
     @Insert
-    fun insertAll(users: List<Flat>)
+    suspend fun insertAll(flats: List<Flat>)
 }

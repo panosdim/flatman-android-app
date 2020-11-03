@@ -9,9 +9,6 @@
     <string name="invalid_username">Not a valid username</string>
     <string name="invalid_password">Password must be >5 characters</string>
     <string name="login_failed">"Login failed"</string>
-    <string name="check_session">Checking for active session</string>
-    <string name="no_active_session">Session expired, establishing a new one</string>
-    <string name="download_data">Downloading data from the server</string>
     <string name="title_flats">Flats</string>
     <string name="title_dashboard">Dashboard</string>
     <string name="title_lessees">Lessees</string>
@@ -44,4 +41,6 @@
     <string name="date">Date</string>
     <string name="amount">Amount</string>
     <string name="savings_per_year">Savings Per Year</string>
+    <string name="add_new">Add New</string>
+    <string name="error_tin_length">TIN must be have length of 9</string>
 </resources>

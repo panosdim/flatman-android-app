@@ -12,8 +12,8 @@ import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.panosdim.flatman.R
+import com.panosdim.flatman.api.data.Resource
 import com.panosdim.flatman.model.Flat
-import com.panosdim.flatman.rest.data.Resource
 import com.panosdim.flatman.ui.adapters.FlatsAdapter
 import com.panosdim.flatman.utils.generateTextWatcher
 import com.panosdim.flatman.viewmodel.FlatViewModel
@@ -38,10 +38,56 @@ class FlatsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        viewModel.getAllFlats().observe(viewLifecycleOwner) { resource ->
+            if (resource != null) {
+                when (resource) {
+                    is Resource.Success -> {
+                        rvFlats.adapter =
+                            resource.data?.let {
+                                FlatsAdapter(it) { flatItem: Flat ->
+                                    flatItemClicked(
+                                        flatItem
+                                    )
+                                }
+                            } ?: FlatsAdapter(mutableListOf()) { flatItem: Flat ->
+                                flatItemClicked(
+                                    flatItem
+                                )
+                            }
+
+                        (rvFlats.adapter as FlatsAdapter).notifyDataSetChanged()
+                        progress_bar.visibility = View.GONE
+                        rvFlats.visibility = View.VISIBLE
+
+                        viewModel.getAllFlats().removeObservers(viewLifecycleOwner)
+                    }
+                    is Resource.Error -> {
+                        Toast.makeText(
+                            requireContext(),
+                            resource.message,
+                            Toast.LENGTH_LONG
+                        ).show()
+                        progress_bar.visibility = View.GONE
+                        rvFlats.visibility = View.VISIBLE
+                    }
+                    is Resource.Loading -> {
+                        progress_bar.visibility = View.VISIBLE
+                        rvFlats.visibility = View.GONE
+                    }
+                }
+            }
+        }
+
         viewModel.flats.observe(viewLifecycleOwner) {
             rvFlats.adapter =
                 FlatsAdapter(it) { flatItem: Flat -> flatItemClicked(flatItem) }
             (rvFlats.adapter as FlatsAdapter).notifyDataSetChanged()
+        }
+
+        swipe_refresh.setOnRefreshListener {
+            viewModel.refreshFlats()
+            swipe_refresh.isRefreshing = false
         }
     }
 

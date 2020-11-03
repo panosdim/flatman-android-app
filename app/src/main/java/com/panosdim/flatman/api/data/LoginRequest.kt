@@ -1,4 +1,4 @@
-package com.panosdim.flatman.rest.data
+package com.panosdim.flatman.api.data
 
 data class LoginRequest(
     val email: String = "",

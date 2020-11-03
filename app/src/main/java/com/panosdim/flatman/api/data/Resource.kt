@@ -1,4 +1,4 @@
-package com.panosdim.flatman.rest.data
+package com.panosdim.flatman.api.data
 
 sealed class Resource<T>(
     val data: T? = null,

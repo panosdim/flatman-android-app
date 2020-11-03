@@ -1,4 +1,4 @@
-package com.panosdim.flatman.rest
+package com.panosdim.flatman.api
 
 import com.google.gson.GsonBuilder
 import com.panosdim.flatman.BACKEND_URL

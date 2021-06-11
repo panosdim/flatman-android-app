@@ -90,7 +90,7 @@ class LesseesFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         rootView = inflater.inflate(R.layout.fragment_lessees, container, false)
         dialog = BottomSheetDialog(requireContext())
         dialogView = inflater.inflate(R.layout.dialog_lessee, container, false)
@@ -183,6 +183,15 @@ class LesseesFragment : Fragment() {
             deleteLessee()
         }
 
+        dialogView.lesseeAddress.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus && !dialogView.lesseeAddress.text.isNullOrEmpty() && dialogView.lesseePostalCode.text.isNullOrEmpty()) {
+                val response = viewModel.getPostalCode(dialogView.lesseeAddress.text.toString())
+                if (response != null) {
+                    dialogView.lesseePostalCode.setText(response.TK.replace("\\s+".toRegex(), ""))
+                }
+            }
+        }
+
         flatViewModel.flats.observe(viewLifecycleOwner, {
             if (it != null && it.isNotEmpty()) {
                 rootView.addNewLessee.isEnabled = true
@@ -269,7 +278,7 @@ class LesseesFragment : Fragment() {
             dialogView.lesseeUntil.text.toString().toSQLDateFormat(),
             selectedFlat?.id!!,
             dialogView.lesseeRent.text.toString().toInt(),
-            dialogView.lesseeTIN.text.toString().toInt()
+            dialogView.lesseeTIN.text.toString()
         )
 
         viewModel.addLessee(newLessee).observe(viewLifecycleOwner) { resource ->
@@ -309,7 +318,7 @@ class LesseesFragment : Fragment() {
             lessee.from == dialogView.lesseeFrom.text.toString().toSQLDateFormat() &&
             lessee.until == dialogView.lesseeUntil.text.toString().toSQLDateFormat() &&
             lessee.rent == dialogView.lesseeRent.text.toString().toInt() &&
-            lessee.tin == dialogView.lesseeTIN.text.toString().toInt()
+            lessee.tin == dialogView.lesseeTIN.text.toString()
         ) {
             dialog.hide()
         } else {
@@ -320,7 +329,7 @@ class LesseesFragment : Fragment() {
             lessee.from = dialogView.lesseeFrom.text.toString().toSQLDateFormat()
             lessee.until = dialogView.lesseeUntil.text.toString().toSQLDateFormat()
             lessee.rent = dialogView.lesseeRent.text.toString().toInt()
-            lessee.tin = dialogView.lesseeTIN.text.toString().toInt()
+            lessee.tin = dialogView.lesseeTIN.text.toString()
 
             viewModel.updateLessee(lessee).observe(viewLifecycleOwner) { resource ->
                 if (resource != null) {
@@ -463,7 +472,7 @@ class LesseesFragment : Fragment() {
             dialogView.lesseeName.setText(lessee.name)
             dialogView.lesseeAddress.setText(lessee.address)
             dialogView.lesseePostalCode.setText(lessee.postalCode)
-            dialogView.lesseeTIN.setText(lessee.tin.toString())
+            dialogView.lesseeTIN.setText(lessee.tin)
             dialogView.lesseeRent.setText(lessee.rent.toString())
             dialogView.lesseeFrom.setText(LocalDate.parse(lessee.from).toShowDateFormat())
             dialogView.lesseeUntil.setText(LocalDate.parse(lessee.until).toShowDateFormat())

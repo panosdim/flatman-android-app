@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import com.panosdim.flatman.App
 import com.panosdim.flatman.R
 import com.panosdim.flatman.api.data.CheckTinResponse
+import com.panosdim.flatman.api.data.PostalCodeResponse
 import com.panosdim.flatman.api.data.Resource
 import com.panosdim.flatman.db
 import com.panosdim.flatman.db.dao.LesseeDao
@@ -21,6 +22,7 @@ import java.time.temporal.ChronoUnit
 
 class LesseeRepository {
     private var client: Webservice = webservice
+    private var postalClient: PostalCodeService = postalCodeService
     private val scope = CoroutineScope(Dispatchers.Main)
     private val lesseeDao: LesseeDao = db.lesseeDao()
     private val result: MutableLiveData<Resource<List<Lessee>>> = MutableLiveData()
@@ -171,6 +173,18 @@ class LesseeRepository {
         runBlocking {
             response = try {
                 client.checkTin(tin)
+            } catch (ex: Exception) {
+                null
+            }
+        }
+        return response
+    }
+
+    fun getPostalCode(address: String): PostalCodeResponse? {
+        var response: PostalCodeResponse?
+        runBlocking {
+            response = try {
+                postalClient.getPostalCode(address)
             } catch (ex: Exception) {
                 null
             }

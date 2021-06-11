@@ -12,8 +12,8 @@ val db by lazy {
     App.db
 }
 
-const
-val BACKEND_URL = "https://api.flat.cc.nf/"
+const val BACKEND_URL = "https://api.flat.cc.nf/"
+const val POSTAL_URL = "https://postal.cc.nf/"
 
 enum class RC(val code: Int) {
     PERMISSION_REQUEST(0)

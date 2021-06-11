@@ -15,5 +15,5 @@ data class Lessee(
     @ColumnInfo var until: String,
     @ColumnInfo @SerializedName("flat_id") var flatId: Int,
     @ColumnInfo var rent: Int,
-    @ColumnInfo var tin: Int
+    @ColumnInfo var tin: String
 )

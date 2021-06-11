@@ -31,7 +31,7 @@
     <string name="from">From</string>
     <string name="until">Until</string>
     <string name="postal_code_title">Postal Code %1$s</string>
-    <string name="tin_title">TIN %1$d</string>
+    <string name="tin_title">TIN %1$s</string>
     <string name="euro">€</string>
     <string name="connection_timeout">Connection timeout</string>
     <string name="unknown_host">Unable to resolve host</string>

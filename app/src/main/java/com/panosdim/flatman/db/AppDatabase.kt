@@ -9,7 +9,7 @@ import com.panosdim.flatman.model.Balance
 import com.panosdim.flatman.model.Flat
 import com.panosdim.flatman.model.Lessee
 
-@Database(entities = [Flat::class, Balance::class, Lessee::class], version = 3)
+@Database(entities = [Flat::class, Balance::class, Lessee::class], version = 4)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun flatDao(): FlatDao
     abstract fun balanceDao(): BalanceDao

@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import com.panosdim.flatman.api.LesseeRepository
 import com.panosdim.flatman.api.data.CheckTinResponse
+import com.panosdim.flatman.api.data.PostalCodeResponse
 import com.panosdim.flatman.api.data.Resource
 import com.panosdim.flatman.model.Lessee
 
@@ -33,5 +34,9 @@ class LesseeViewModel : ViewModel() {
 
     fun checkTin(tin: String): CheckTinResponse? {
         return lesseeRepository.checkTin(tin)
+    }
+
+    fun getPostalCode(address: String): PostalCodeResponse? {
+        return lesseeRepository.getPostalCode(address)
     }
 }

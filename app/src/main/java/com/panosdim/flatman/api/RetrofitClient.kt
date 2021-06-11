@@ -2,6 +2,7 @@ package com.panosdim.flatman.api
 
 import com.google.gson.GsonBuilder
 import com.panosdim.flatman.BACKEND_URL
+import com.panosdim.flatman.POSTAL_URL
 import com.panosdim.flatman.prefs
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -24,4 +25,16 @@ val webservice: Webservice by lazy {
         .addConverterFactory(GsonConverterFactory.create(GsonBuilder().create()))
         .build()
         .create(Webservice::class.java)
+}
+
+val postalCodeService: PostalCodeService by lazy {
+    val client = OkHttpClient.Builder().build()
+
+    Retrofit.Builder()
+        .baseUrl(POSTAL_URL)
+        .client(client)
+        .addConverterFactory(ScalarsConverterFactory.create())
+        .addConverterFactory(GsonConverterFactory.create(GsonBuilder().create()))
+        .build()
+        .create(PostalCodeService::class.java)
 }

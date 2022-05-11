@@ -9,16 +9,19 @@ import android.net.Uri
 import android.os.Environment
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.content.pm.PackageInfoCompat
-import com.panosdim.flatman.BACKEND_URL
-import org.json.JSONObject
-import java.io.BufferedReader
-import java.net.HttpURLConnection
-import java.net.URL
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.StorageReference
+import com.google.firebase.storage.ktx.storage
+import com.google.gson.Gson
+import com.panosdim.flatman.R
+import com.panosdim.flatman.TAG
+import com.panosdim.flatman.model.FileMetadata
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
-import javax.net.ssl.HttpsURLConnection
 
 var refId: Long = -1
 
@@ -31,55 +34,69 @@ fun moneyFormat(obj: Any): String {
 }
 
 fun checkForNewVersion(context: Context) {
-    val url: URL
-    val response: String
-    try {
-        url = URL(BACKEND_URL + "apk/output.json")
+    val storage = Firebase.storage
+    val metadataFileName = "output-metadata.json"
+    val apkFileName = "app-release.apk"
 
-        val conn = url.openConnection() as HttpURLConnection
+    // Create a storage reference from our app
+    val storageRef = storage.reference
 
-        conn.readTimeout = 15000
-        conn.connectTimeout = 15000
-        conn.requestMethod = "GET"
-        conn.doOutput = false
+    // Create a metadata reference
+    val metadataRef: StorageReference = storageRef.child(metadataFileName)
 
-        conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8")
+    metadataRef.getBytes(Long.MAX_VALUE).addOnSuccessListener {
+        // Use the bytes to display the image
+        val data = String(it)
+        val fileMetadata = Gson().fromJson(data, FileMetadata::class.java)
+        val version = fileMetadata.elements[0].versionCode
 
-        val responseCode = conn.responseCode
-
-        if (responseCode == HttpsURLConnection.HTTP_OK) {
-            response = conn.inputStream.bufferedReader().use(BufferedReader::readText)
-            val version = JSONObject(response).getLong("versionCode")
-            val appVersion = PackageInfoCompat.getLongVersionCode(
-                context.packageManager.getPackageInfo(
-                    context.packageName,
-                    0
-                )
+        val appVersion = PackageInfoCompat.getLongVersionCode(
+            context.packageManager.getPackageInfo(
+                context.packageName,
+                0
             )
-            if (version > appVersion && ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-                ) == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.READ_EXTERNAL_STORAGE
-                ) == PackageManager.PERMISSION_GRANTED
-            ) {
-                val versionName = JSONObject(response).getString("versionName")
-                downloadNewVersion(context, versionName)
+        )
+
+        if (version > appVersion
+            && ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ) == PackageManager.PERMISSION_GRANTED
+            && ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.READ_EXTERNAL_STORAGE
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.new_version),
+                Toast.LENGTH_LONG
+            ).show()
+
+            val versionName = fileMetadata.elements[0].versionName
+
+            // Create an apk reference
+            val apkRef = storageRef.child(apkFileName)
+
+            apkRef.downloadUrl.addOnSuccessListener { uri ->
+                downloadNewVersion(context, uri, versionName)
+            }.addOnFailureListener {
+                // Handle any errors
+                Log.w(TAG, "Fail to download file $apkFileName")
             }
         }
-    } catch (e: Exception) {
-        e.printStackTrace()
+    }.addOnFailureListener {
+        // Handle any errors
+        Log.w(TAG, "Fail to retrieve $metadataFileName")
     }
 }
 
-private fun downloadNewVersion(context: Context, version: String) {
+private fun downloadNewVersion(context: Context, downloadUrl: Uri, version: String) {
     val manager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
     val request =
-        DownloadManager.Request(Uri.parse(BACKEND_URL + "apk/app-release.apk"))
+        DownloadManager.Request(downloadUrl)
     request.setDescription("Downloading new version of FlatMan.")
-    request.setTitle("New FlatMan Version")
+    request.setTitle("New FlatMan Version: $version")
     request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
     request.setDestinationInExternalPublicDir(
         Environment.DIRECTORY_DOWNLOADS,
@@ -109,4 +126,26 @@ fun <T> startIntent(context: Context, cls: Class<T>) {
     intent.flags =
         Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
     context.startActivity(intent)
+}
+
+fun isValidTIN(tin: String?): Boolean {
+    val tinLen = 9
+    if (tin == null || tin.length != tinLen || tin == "000000000") {
+        return false
+    }
+    var total = 0
+    var check = -1
+    for (i in tinLen - 1 downTo 0) {
+        val c = tin[i]
+        if (!Character.isDigit(c)) {
+            return false
+        }
+        val digit = c - '0'
+        if (i == tinLen - 1) {
+            check = digit
+            continue
+        }
+        total += digit shl tinLen - i - 1
+    }
+    return check == total % 11 % 10
 }

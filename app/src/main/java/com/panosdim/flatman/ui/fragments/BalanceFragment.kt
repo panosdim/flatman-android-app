@@ -20,6 +20,7 @@ import com.panosdim.flatman.ui.adapters.BalanceAdapter
 import com.panosdim.flatman.utils.*
 import com.panosdim.flatman.viewmodel.BalanceViewModel
 import com.panosdim.flatman.viewmodel.FlatViewModel
+import com.panosdim.flatman.viewmodel.LesseeViewModel
 import kotlinx.android.synthetic.main.dialog_balance.view.*
 import kotlinx.android.synthetic.main.fragment_balance.*
 import kotlinx.android.synthetic.main.fragment_balance.view.*
@@ -28,6 +29,7 @@ import java.time.LocalDate
 
 class BalanceFragment : Fragment() {
     private val flatViewModel: FlatViewModel by viewModels()
+    private val lesseeViewModel: LesseeViewModel by viewModels()
     private lateinit var dialog: BottomSheetDialog
     private lateinit var dialogView: View
     private lateinit var rootView: View
@@ -84,7 +86,7 @@ class BalanceFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         rootView = inflater.inflate(R.layout.fragment_balance, container, false)
         dialog = BottomSheetDialog(requireContext())
         dialogView = inflater.inflate(R.layout.dialog_balance, container, false)
@@ -123,6 +125,7 @@ class BalanceFragment : Fragment() {
             resources.getStringArray(R.array.comments)
         )
         dialogView.balanceComment.setAdapter(adapter)
+        @Suppress("DEPRECATION")
         dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
 
         dialogView.balanceDate.setOnClickListener {
@@ -161,7 +164,7 @@ class BalanceFragment : Fragment() {
             deleteBalance()
         }
 
-        flatViewModel.flats.observe(viewLifecycleOwner, {
+        flatViewModel.flats.observe(viewLifecycleOwner) {
             if (it != null && it.isNotEmpty()) {
                 rootView.addNewBalance.isEnabled = true
                 flatSelectAdapter =
@@ -180,7 +183,7 @@ class BalanceFragment : Fragment() {
                         )
                     }
             }
-        })
+        }
 
         rootView.selectedFlat.setOnItemClickListener { _, _, position, _ ->
             selectedFlat = flatSelectAdapter.getItem(position)
@@ -194,7 +197,7 @@ class BalanceFragment : Fragment() {
         val data = viewModel.balance.value
         if (data != null) {
             val temp = data.filter {
-                it.flatId == selectedFlat?.id ?: -1
+                it.flatId == (selectedFlat?.id ?: -1)
             }.sortedByDescending { it.date }
             rootView.rvBalance.adapter =
                 BalanceAdapter(temp) { balanceItem: Balance -> balanceItemClicked(balanceItem) }
@@ -380,6 +383,12 @@ class BalanceFragment : Fragment() {
             dialogView.balanceComment.addTextChangedListener(textWatcher)
             val today = LocalDate.now()
             dialogView.balanceAmount.setText("")
+            selectedFlat?.let {
+                val rent = lesseeViewModel.getMonthlyRent(it)
+                if (rent != null) {
+                    dialogView.balanceAmount.setText(rent.toString())
+                }
+            }
             dialogView.balanceComment.setText("")
             dialogView.balanceDate.setText(today.toShowDateFormat())
             dialogView.deleteBalance.visibility = View.GONE

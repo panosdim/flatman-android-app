@@ -12,6 +12,9 @@ interface LesseeDao {
     @Query("SELECT * FROM Lessee")
     fun getLiveData(): LiveData<List<Lessee>>
 
+    @Query("SELECT * FROM Lessee WHERE flatId == :flatId")
+    suspend fun getLessees(flatId: Int): List<Lessee>
+
     @Insert
     suspend fun insert(lessee: Lessee)
 

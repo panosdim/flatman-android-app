@@ -1,6 +1,5 @@
 package com.panosdim.flatman.api
 
-import com.panosdim.flatman.api.data.CheckTinResponse
 import com.panosdim.flatman.api.data.LoginRequest
 import com.panosdim.flatman.api.data.LoginResponse
 import com.panosdim.flatman.model.Balance
@@ -10,45 +9,42 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface Webservice {
-    @POST("/login")
+    @POST("login")
     suspend fun login(@Body request: LoginRequest): LoginResponse
 
-    @GET("/checkTin/{tin}")
-    suspend fun checkTin(@Path("tin") tin: String): CheckTinResponse
-
-    @GET("/flat")
+    @GET("flat")
     suspend fun flat(): List<Flat>
 
-    @POST("/flat")
+    @POST("flat")
     suspend fun flat(@Body request: Flat): Flat
 
-    @PUT("/flat/{id}")
+    @PUT("flat/{id}")
     suspend fun flat(@Path("id") id: Int, @Body request: Flat): Flat
 
-    @DELETE("/flat/{id}")
+    @DELETE("flat/{id}")
     suspend fun flat(@Path("id") id: Int): Response<Void>
 
-    @GET("/lessee")
+    @GET("lessee")
     suspend fun lessee(): List<Lessee>
 
-    @POST("/lessee")
+    @POST("lessee")
     suspend fun lessee(@Body request: Lessee): Lessee
 
-    @PUT("/lessee/{id}")
+    @PUT("lessee/{id}")
     suspend fun lessee(@Path("id") id: Int, @Body request: Lessee): Lessee
 
-    @DELETE("/lessee/{id}")
+    @DELETE("lessee/{id}")
     suspend fun lessee(@Path("id") id: Int): Response<Void>
 
-    @GET("/balance")
+    @GET("balance")
     suspend fun balance(): List<Balance>
 
-    @POST("/balance")
+    @POST("balance")
     suspend fun balance(@Body request: Balance): Balance
 
-    @PUT("/balance/{id}")
+    @PUT("balance/{id}")
     suspend fun balance(@Path("id") id: Int, @Body request: Balance): Balance
 
-    @DELETE("/balance/{id}")
+    @DELETE("balance/{id}")
     suspend fun balance(@Path("id") id: Int): Response<Void>
 }

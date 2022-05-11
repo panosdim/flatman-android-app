@@ -4,11 +4,11 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.panosdim.flatman.App
 import com.panosdim.flatman.R
-import com.panosdim.flatman.api.data.CheckTinResponse
 import com.panosdim.flatman.api.data.PostalCodeResponse
 import com.panosdim.flatman.api.data.Resource
 import com.panosdim.flatman.db
 import com.panosdim.flatman.db.dao.LesseeDao
+import com.panosdim.flatman.model.Flat
 import com.panosdim.flatman.model.Lessee
 import com.panosdim.flatman.prefs
 import com.panosdim.flatman.utils.fromEpochMilli
@@ -168,11 +168,11 @@ class LesseeRepository {
         }
     }
 
-    fun checkTin(tin: String): CheckTinResponse? {
-        var response: CheckTinResponse?
+    fun getPostalCode(address: String): PostalCodeResponse? {
+        var response: PostalCodeResponse?
         runBlocking {
             response = try {
-                client.checkTin(tin)
+                postalClient.getPostalCode(address)
             } catch (ex: Exception) {
                 null
             }
@@ -180,11 +180,19 @@ class LesseeRepository {
         return response
     }
 
-    fun getPostalCode(address: String): PostalCodeResponse? {
-        var response: PostalCodeResponse?
+    fun getMonthlyRent(flat: Flat): Int? {
+        var response: Int?
         runBlocking {
             response = try {
-                postalClient.getPostalCode(address)
+                flat.id?.let { flatId ->
+                    val lessees = lesseeDao.getLessees(flatId)
+                    val today = LocalDate.now()
+
+                    val lessee = lessees.first {
+                        today.isBefore(LocalDate.parse(it.until))
+                    }
+                    lessee.rent
+                }
             } catch (ex: Exception) {
                 null
             }

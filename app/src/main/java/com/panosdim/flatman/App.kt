@@ -2,6 +2,9 @@ package com.panosdim.flatman
 
 import android.app.Application
 import androidx.room.Room
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import com.panosdim.flatman.db.AppDatabase
 
 val prefs: Prefs by lazy {
@@ -12,18 +15,20 @@ val db by lazy {
     App.db
 }
 
-const val BACKEND_URL = "https://api.flat.cc.nf/"
-const val POSTAL_URL = "https://postal.cc.nf/"
-
-enum class RC(val code: Int) {
-    PERMISSION_REQUEST(0)
+val auth by lazy {
+    App.auth
 }
+
+const val BACKEND_URL = "https://flatman.dsw.mywire.org/api/"
+const val POSTAL_URL = "https://postal.dsw.mywire.org/"
+const val TAG = "FLAT_MAN"
 
 class App : Application() {
     companion object {
         var prefs: Prefs? = null
         lateinit var db: AppDatabase
         lateinit var instance: App private set
+        lateinit var auth: FirebaseAuth
     }
 
     override fun onCreate() {
@@ -34,6 +39,7 @@ class App : Application() {
         )
             .fallbackToDestructiveMigration()
             .build()
+        auth = Firebase.auth
         super.onCreate()
         instance = this
     }

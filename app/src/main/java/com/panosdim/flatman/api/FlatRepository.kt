@@ -78,6 +78,9 @@ class FlatRepository {
                         404 -> {
                             result.postValue(Resource.Error("Error deleting flat. Flat not found."))
                         }
+                        400 -> {
+                            result.postValue(Resource.Error("Error deleting flat. Maybe you have lessees or balance connected with this flat."))
+                        }
                     }
                 }
             } catch (ex: HttpException) {

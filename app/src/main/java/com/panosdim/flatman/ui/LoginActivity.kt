@@ -2,6 +2,7 @@ package com.panosdim.flatman.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.util.Patterns
 import android.view.KeyEvent
 import android.view.View
@@ -9,10 +10,12 @@ import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.panosdim.flatman.R
+import com.panosdim.flatman.TAG
 import com.panosdim.flatman.api.Webservice
 import com.panosdim.flatman.api.data.LoginRequest
 import com.panosdim.flatman.api.data.LoginResponse
 import com.panosdim.flatman.api.webservice
+import com.panosdim.flatman.auth
 import com.panosdim.flatman.model.User
 import com.panosdim.flatman.prefs
 import com.panosdim.flatman.utils.generateTextWatcher
@@ -78,6 +81,17 @@ class LoginActivity : AppCompatActivity() {
                     prefs.token = response.token
                     prefs.email = username
                     prefs.password = password
+
+                    auth.signInAnonymously()
+                        .addOnCompleteListener(this@LoginActivity) { task ->
+                            if (task.isSuccessful) {
+                                // Sign in success
+                                Log.d(TAG, "signInAnonymously:success")
+                            } else {
+                                // If sign in fails, display a message to the user.
+                                Log.w(TAG, "signInAnonymously:failure", task.exception)
+                            }
+                        }
                 }
                 updateUiWithUser(response.user!!)
 

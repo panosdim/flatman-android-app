@@ -186,13 +186,13 @@ class LesseesFragment : Fragment() {
         dialogView.lesseeAddress.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus && !dialogView.lesseeAddress.text.isNullOrEmpty() && dialogView.lesseePostalCode.text.isNullOrEmpty()) {
                 val response = viewModel.getPostalCode(dialogView.lesseeAddress.text.toString())
-                if (response != null) {
+                if (response != null && response.TK != "NOT FOUND") {
                     dialogView.lesseePostalCode.setText(response.TK.replace("\\s+".toRegex(), ""))
                 }
             }
         }
 
-        flatViewModel.flats.observe(viewLifecycleOwner, {
+        flatViewModel.flats.observe(viewLifecycleOwner) {
             if (it != null && it.isNotEmpty()) {
                 rootView.addNewLessee.isEnabled = true
                 flatSelectAdapter = ArrayAdapter(requireContext(), R.layout.list_item, it)
@@ -210,7 +210,7 @@ class LesseesFragment : Fragment() {
                         )
                     }
             }
-        })
+        }
 
         rootView.selectedFlat.setOnItemClickListener { _, _, position, _ ->
             selectedFlat = flatSelectAdapter.getItem(position)
@@ -224,7 +224,7 @@ class LesseesFragment : Fragment() {
         val data = viewModel.lessee.value
         if (data != null) {
             val temp = data.filter {
-                it.flatId == selectedFlat?.id ?: -1
+                it.flatId == (selectedFlat?.id ?: -1)
             }
             rootView.rvLessees.adapter =
                 LesseesAdapter(temp) { lesseeItem: Lessee -> lesseeItemClicked(lesseeItem) }
@@ -409,8 +409,7 @@ class LesseesFragment : Fragment() {
         }
 
         if (tin.length == 9) {
-            val response = viewModel.checkTin(tin)
-            if (response == null || !(response.validStructure && response.validSyntax)) {
+            if (!isValidTIN(tin)) {
                 lesseeTIN.error = getString(R.string.error_tin)
                 saveLessee.isEnabled = false
             }

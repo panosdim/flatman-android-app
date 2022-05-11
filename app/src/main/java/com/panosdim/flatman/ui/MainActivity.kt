@@ -1,22 +1,17 @@
 package com.panosdim.flatman.ui
 
-import android.Manifest
 import android.app.DownloadManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.panosdim.flatman.R
 import com.panosdim.flatman.TAG
 import com.panosdim.flatman.api.Webservice
@@ -66,34 +61,24 @@ class MainActivity : AppCompatActivity() {
         }
         registerReceiver(onComplete, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
 
-        // Check for permission to read/write to external storage
-        val requestPermissionLauncher =
-            registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
-                if (isGranted) {
-                    checkForNewVersion(this)
-                } else {
-                    MaterialAlertDialogBuilder(this)
-                        .setTitle(resources.getString(R.string.permission_title))
-                        .setMessage(resources.getString(R.string.permission_description))
-                        .setPositiveButton(resources.getString(R.string.dismiss)) { dialog, _ ->
-                            dialog.dismiss()
-                        }
-                        .show()
+        if (auth.currentUser == null) {
+            auth.signInAnonymously()
+                .addOnCompleteListener(this@MainActivity) { task ->
+                    if (task.isSuccessful) {
+                        // Sign in success
+                        Log.d(TAG, "signInAnonymously:success")
+                    } else {
+                        // If sign in fails, display a message to the user.
+                        Log.w(TAG, "signInAnonymously:failure", task.exception)
+                    }
                 }
-            }
-        when (PackageManager.PERMISSION_GRANTED) {
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-            ) -> {
-                checkForNewVersion(this)
-            }
-            else -> {
-                requestPermissionLauncher.launch(
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-                )
-            }
+                .addOnFailureListener {
+                    Log.w(TAG, "Fail to login anonymously.", it)
+                }
         }
+
+        // Check for new version
+        checkForNewVersion(this)
     }
 
     override fun onResume() {
@@ -116,19 +101,6 @@ class MainActivity : AppCompatActivity() {
                                 )
                             )
                         prefs.token = response.token
-                        auth.signInAnonymously()
-                            .addOnCompleteListener(this@MainActivity) { task ->
-                                if (task.isSuccessful) {
-                                    // Sign in success
-                                    Log.d(TAG, "signInAnonymously:success")
-                                } else {
-                                    // If sign in fails, display a message to the user.
-                                    Log.w(TAG, "signInAnonymously:failure", task.exception)
-                                }
-                            }
-                            .addOnFailureListener {
-                                Log.w(TAG, "Fail to login anonymously.", it)
-                            }
                     }
                 } catch (e: HttpException) {
                     startIntent(this@MainActivity, LoginActivity::class.java)

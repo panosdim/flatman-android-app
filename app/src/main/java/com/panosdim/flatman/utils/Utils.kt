@@ -1,17 +1,14 @@
 package com.panosdim.flatman.utils
 
-import android.Manifest
 import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Environment
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
 import android.widget.Toast
-import androidx.core.content.ContextCompat
 import androidx.core.content.pm.PackageInfoCompat
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.StorageReference
@@ -57,16 +54,7 @@ fun checkForNewVersion(context: Context) {
             )
         )
 
-        if (version > appVersion
-            && ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-            ) == PackageManager.PERMISSION_GRANTED
-            && ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
+        if (version > appVersion) {
             Toast.makeText(
                 context,
                 context.getString(R.string.new_version),

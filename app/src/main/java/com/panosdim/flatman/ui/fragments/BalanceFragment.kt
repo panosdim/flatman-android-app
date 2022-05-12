@@ -136,7 +136,7 @@ class BalanceFragment : Fragment() {
             val constraintsBuilder = CalendarConstraints.Builder()
             constraintsBuilder.setOpenAt(date.toEpochMilli())
             builder.setCalendarConstraints(constraintsBuilder.build())
-            builder.setTheme(R.style.ThemeOverlay_Catalog_MaterialCalendar_Custom)
+            builder.setTheme(R.style.Theme_FlatMan_MaterialCalendar)
             builder.setSelection(date.toEpochMilli())
             builder.setTitleText("Select Date")
 

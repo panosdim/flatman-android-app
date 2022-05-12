@@ -35,11 +35,11 @@ class DashboardFragment : Fragment() {
         val root = inflater.inflate(R.layout.fragment_dashboard, container, false)
         val chart: LineChart = root.findViewById(R.id.chart)
 
-        viewModel.balance.observe(viewLifecycleOwner, { bal ->
+        viewModel.balance.observe(viewLifecycleOwner) { bal ->
             if (bal != null && bal.isNotEmpty()) {
                 updateDashboard(bal, chart)
             }
-        })
+        }
 
         return root
     }
@@ -125,7 +125,7 @@ class DashboardFragment : Fragment() {
         data.setValueTextColor(
             ContextCompat.getColor(
                 requireContext(),
-                R.color.primaryTextColor
+                R.color.lineColor
             )
         )
         data.setValueFormatter(MyValueFormatter())

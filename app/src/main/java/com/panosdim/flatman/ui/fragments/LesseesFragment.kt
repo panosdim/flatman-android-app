@@ -133,7 +133,7 @@ class LesseesFragment : Fragment() {
             constraintsBuilder.setEnd(untilDate.toEpochMilli())
             constraintsBuilder.setOpenAt(date.toEpochMilli())
             builder.setCalendarConstraints(constraintsBuilder.build())
-            builder.setTheme(R.style.ThemeOverlay_Catalog_MaterialCalendar_Custom)
+            builder.setTheme(R.style.Theme_FlatMan_MaterialCalendar)
             builder.setSelection(date.toEpochMilli())
             builder.setTitleText("Select From Date")
 
@@ -155,7 +155,7 @@ class LesseesFragment : Fragment() {
             constraintsBuilder.setStart(fromDate.toEpochMilli())
             constraintsBuilder.setOpenAt(date.toEpochMilli())
             builder.setCalendarConstraints(constraintsBuilder.build())
-            builder.setTheme(R.style.ThemeOverlay_Catalog_MaterialCalendar_Custom)
+            builder.setTheme(R.style.Theme_FlatMan_MaterialCalendar)
             builder.setSelection(date.toEpochMilli())
             builder.setTitleText("Select Until Date")
 

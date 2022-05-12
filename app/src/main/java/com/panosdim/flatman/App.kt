@@ -8,7 +8,7 @@ import com.google.firebase.ktx.Firebase
 import com.panosdim.flatman.db.AppDatabase
 
 val prefs: Prefs by lazy {
-    App.prefs!!
+    App.prefs
 }
 
 val db by lazy {
@@ -25,7 +25,7 @@ const val TAG = "FLAT_MAN"
 
 class App : Application() {
     companion object {
-        var prefs: Prefs? = null
+        lateinit var prefs: Prefs
         lateinit var db: AppDatabase
         lateinit var instance: App private set
         lateinit var auth: FirebaseAuth

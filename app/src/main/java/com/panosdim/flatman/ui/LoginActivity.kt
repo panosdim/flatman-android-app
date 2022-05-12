@@ -93,7 +93,9 @@ class LoginActivity : AppCompatActivity() {
                             }
                         }
                 }
-                updateUiWithUser(response.user!!)
+                response.user?.let {
+                    updateUiWithUser(it)
+                }
 
                 //Complete and destroy login activity once successful
                 finish()

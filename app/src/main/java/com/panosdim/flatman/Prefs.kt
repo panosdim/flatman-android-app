@@ -19,15 +19,15 @@ class Prefs(context: Context) {
         context.getSharedPreferences(PREFS_FILENAME, MODE_PRIVATE)
 
     var token: String
-        get() = prefs.getString(TOKEN, "")!!
+        get() = prefs.getString(TOKEN, "").toString()
         set(value) = prefs.edit().putString(TOKEN, value).apply()
 
     var email: String
-        get() = prefs.getString(EMAIL, "")!!
+        get() = prefs.getString(EMAIL, "").toString()
         set(value) = prefs.edit().putString(EMAIL, value).apply()
 
     var password: String
-        get() = prefs.getString(PASSWORD, "")!!
+        get() = prefs.getString(PASSWORD, "").toString()
         set(value) = prefs.edit().putString(PASSWORD, value).apply()
 
     var flatFetchDate: Long

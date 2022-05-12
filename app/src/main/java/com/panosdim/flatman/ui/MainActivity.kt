@@ -47,16 +47,20 @@ class MainActivity : AppCompatActivity() {
         manager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         onComplete = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
-                val referenceId = intent!!.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-                if (referenceId != -1L && referenceId == refId) {
-                    val apkUri = manager.getUriForDownloadedFile(refId)
-                    val installIntent = Intent(Intent.ACTION_VIEW)
-                    installIntent.setDataAndType(apkUri, "application/vnd.android.package-archive")
-                    installIntent.flags =
-                        Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    startActivity(installIntent)
+                intent?.let {
+                    val referenceId = it.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
+                    if (referenceId != -1L && referenceId == refId) {
+                        val apkUri = manager.getUriForDownloadedFile(refId)
+                        val installIntent = Intent(Intent.ACTION_VIEW)
+                        installIntent.setDataAndType(
+                            apkUri,
+                            "application/vnd.android.package-archive"
+                        )
+                        installIntent.flags =
+                            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        startActivity(installIntent)
+                    }
                 }
-
             }
         }
         registerReceiver(onComplete, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))

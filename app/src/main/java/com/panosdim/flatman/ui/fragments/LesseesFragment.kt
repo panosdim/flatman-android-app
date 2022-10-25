@@ -23,49 +23,15 @@ class LesseesFragment : Fragment() {
     private val flatViewModel: FlatViewModel by viewModels()
     private val lesseeDialog: LesseeDialog = LesseeDialog()
     private val viewModel: LesseeViewModel by viewModels()
+    private var lesseesAdapter = LesseesAdapter(mutableListOf()) { lesseeItem: Lessee ->
+        lesseeItemClicked(
+            lesseeItem
+        )
+    }
 
     private fun lesseeItemClicked(lessee: Lessee) {
         lesseeDialog.showNow(childFragmentManager, LesseeDialog.TAG)
         lesseeDialog.showForm(lessee)
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        viewModel.getAllLessee().observe(viewLifecycleOwner) { resource ->
-            if (resource != null) {
-                when (resource) {
-                    is Resource.Success -> {
-                        binding.progressBar.visibility = View.GONE
-                        binding.rvLessees.visibility = View.VISIBLE
-                        updateLesseeAdapter()
-                        viewModel.getAllLessee().removeObservers(viewLifecycleOwner)
-                    }
-                    is Resource.Error -> {
-                        Toast.makeText(
-                            requireContext(),
-                            resource.message,
-                            Toast.LENGTH_LONG
-                        ).show()
-                        binding.progressBar.visibility = View.GONE
-                        binding.rvLessees.visibility = View.VISIBLE
-                    }
-                    is Resource.Loading -> {
-                        binding.progressBar.visibility = View.VISIBLE
-                        binding.rvLessees.visibility = View.GONE
-                    }
-                }
-            }
-        }
-
-        viewModel.lessee.observe(viewLifecycleOwner) {
-            updateLesseeAdapter()
-        }
-
-        binding.swipeRefresh.setOnRefreshListener {
-            viewModel.refreshLessee()
-            binding.swipeRefresh.isRefreshing = false
-        }
     }
 
     override fun onCreateView(
@@ -85,46 +51,78 @@ class LesseesFragment : Fragment() {
             lesseeDialog.showForm(null)
         }
 
-        flatViewModel.flats.observe(viewLifecycleOwner) {
-            if (it != null && it.isNotEmpty()) {
-                binding.addNewLessee.isEnabled = true
-                updateLesseeAdapter()
-            } else {
-                binding.addNewLessee.isEnabled = false
-                binding.rvLessees.adapter =
-                    LesseesAdapter(mutableListOf(), mutableListOf()) { lesseeItem: Lessee ->
-                        lesseeItemClicked(
-                            lesseeItem
-                        )
+        flatViewModel.getFlats().observe(viewLifecycleOwner) { resource ->
+            if (resource != null) {
+                when (resource) {
+                    is Resource.Success -> {
+                        if (resource.data != null && resource.data.isNotEmpty()) {
+                            binding.addNewLessee.isEnabled = true
+                            lesseesAdapter = LesseesAdapter(
+                                resource.data
+                            ) { lesseeItem: Lessee ->
+                                lesseeItemClicked(
+                                    lesseeItem
+                                )
+                            }
+                            binding.rvLessees.adapter = lesseesAdapter
+                            lesseeDialog.flats = resource.data
+
+                            // Fetch Lessees
+                            viewModel.getLessees().observe(viewLifecycleOwner) { res ->
+                                if (res != null) {
+                                    when (res) {
+                                        is Resource.Success -> {
+                                            binding.progressBar.visibility = View.GONE
+                                            binding.rvLessees.visibility = View.VISIBLE
+
+                                            res.data?.let { lessees ->
+                                                lesseesAdapter.submitList(lessees)
+                                            }
+                                        }
+                                        is Resource.Error -> {
+                                            Toast.makeText(
+                                                requireContext(),
+                                                res.message,
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                            binding.progressBar.visibility = View.GONE
+                                            binding.rvLessees.visibility = View.VISIBLE
+                                        }
+                                        is Resource.Loading -> {
+                                            binding.progressBar.visibility = View.VISIBLE
+                                            binding.rvLessees.visibility = View.GONE
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            binding.addNewLessee.isEnabled = false
+                        }
                     }
+                    is Resource.Error -> {
+                        binding.addNewLessee.isEnabled = false
+                        Toast.makeText(
+                            requireContext(),
+                            resource.message,
+                            Toast.LENGTH_LONG
+                        ).show()
+                        binding.progressBar.visibility = View.GONE
+                        binding.rvLessees.visibility = View.VISIBLE
+                    }
+                    is Resource.Loading -> {
+                        binding.progressBar.visibility = View.VISIBLE
+                        binding.rvLessees.visibility = View.GONE
+                    }
+                }
             }
+        }
+
+        binding.swipeRefresh.setOnRefreshListener {
+            viewModel.refreshLessee()
+            binding.swipeRefresh.isRefreshing = false
         }
 
         return root
-    }
-
-    private fun updateLesseeAdapter() {
-        viewModel.lessee.value?.let { lessees ->
-            flatViewModel.flats.value?.let { flats ->
-                binding.rvLessees.adapter =
-                    LesseesAdapter(
-                        lessees,
-                        flats
-                    ) { lesseeItem: Lessee -> lesseeItemClicked(lesseeItem) }
-            } ?: kotlin.run {
-                binding.rvLessees.adapter =
-                    LesseesAdapter(
-                        mutableListOf(),
-                        mutableListOf()
-                    ) { lesseeItem: Lessee -> lesseeItemClicked(lesseeItem) }
-            }
-        } ?: kotlin.run {
-            binding.rvLessees.adapter =
-                LesseesAdapter(
-                    mutableListOf(),
-                    mutableListOf()
-                ) { lesseeItem: Lessee -> lesseeItemClicked(lesseeItem) }
-        }
     }
 
     override fun onDestroyView() {

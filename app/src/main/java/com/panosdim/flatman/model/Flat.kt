@@ -6,10 +6,10 @@ import androidx.room.PrimaryKey
 
 @Entity
 data class Flat(
-    @PrimaryKey var id: Int? = null,
-    @ColumnInfo var name: String,
-    @ColumnInfo var address: String,
-    @ColumnInfo var floor: Int
+    @PrimaryKey val id: Int? = null,
+    @ColumnInfo val name: String,
+    @ColumnInfo val address: String,
+    @ColumnInfo val floor: Int
 ) {
     override fun toString(): String {
         return name

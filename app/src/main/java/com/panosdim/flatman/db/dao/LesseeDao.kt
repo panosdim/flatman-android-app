@@ -1,6 +1,5 @@
 package com.panosdim.flatman.db.dao
 
-import androidx.lifecycle.LiveData
 import androidx.room.*
 import com.panosdim.flatman.model.Lessee
 
@@ -8,9 +7,6 @@ import com.panosdim.flatman.model.Lessee
 interface LesseeDao {
     @Query("SELECT * FROM Lessee")
     suspend fun get(): List<Lessee>
-
-    @Query("SELECT * FROM Lessee")
-    fun getLiveData(): LiveData<List<Lessee>>
 
     @Query("SELECT * FROM Lessee WHERE flatId == :flatId")
     suspend fun getLessees(flatId: Int): List<Lessee>

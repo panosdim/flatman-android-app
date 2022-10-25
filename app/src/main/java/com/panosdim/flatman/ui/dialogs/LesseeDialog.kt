@@ -19,7 +19,6 @@ import com.panosdim.flatman.databinding.DialogLesseeBinding
 import com.panosdim.flatman.model.Flat
 import com.panosdim.flatman.model.Lessee
 import com.panosdim.flatman.utils.*
-import com.panosdim.flatman.viewmodel.FlatViewModel
 import com.panosdim.flatman.viewmodel.LesseeViewModel
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
@@ -31,9 +30,8 @@ class LesseeDialog : BottomSheetDialogFragment() {
     private var selectedFlat: Flat? = null
     private val textWatcher = generateTextWatcher(::validateForm)
     private val viewModel: LesseeViewModel by viewModels(ownerProducer = { requireParentFragment() })
-    private val flatViewModel: FlatViewModel by viewModels(ownerProducer = { requireParentFragment() })
     private val postalCodeRegex = """^[12345678][0-9]{4}$""".toRegex()
-    private var flats: List<Flat> = mutableListOf()
+    var flats: List<Flat> = mutableListOf()
 
 
     override fun onCreateView(
@@ -129,12 +127,6 @@ class LesseeDialog : BottomSheetDialogFragment() {
                     binding.lesseePostalCode.setText(response.TK.replace("\\s+".toRegex(), ""))
                 }
             }
-        }
-
-        flatViewModel.flats.observe(viewLifecycleOwner) { flatsList ->
-            flats = flatsList
-            val adapter = ArrayAdapter(requireContext(), R.layout.list_item, flatsList)
-            binding.flat.setAdapter(adapter)
         }
 
         binding.flat.setOnItemClickListener { parent, _, position, _ ->
@@ -246,16 +238,18 @@ class LesseeDialog : BottomSheetDialogFragment() {
             dismiss()
         } else {
             // Update Lessee
-            lessee.name = binding.lesseeName.text.toString()
-            lessee.address = binding.lesseeAddress.text.toString()
-            lessee.postalCode = binding.lesseePostalCode.text.toString()
-            lessee.from = binding.lesseeFrom.text.toString().toSQLDateFormat()
-            lessee.until = binding.lesseeUntil.text.toString().toSQLDateFormat()
-            lessee.rent = binding.lesseeRent.text.toString().toInt()
-            lessee.tin = binding.lesseeTIN.text.toString()
-            lessee.flatId = selectedFlat?.id!!
+            val updatedLessee = lessee.copy(
+                name = binding.lesseeName.text.toString(),
+                address = binding.lesseeAddress.text.toString(),
+                postalCode = binding.lesseePostalCode.text.toString(),
+                from = binding.lesseeFrom.text.toString().toSQLDateFormat(),
+                until = binding.lesseeUntil.text.toString().toSQLDateFormat(),
+                flatId = selectedFlat?.id!!,
+                rent = binding.lesseeRent.text.toString().toInt(),
+                tin = binding.lesseeTIN.text.toString()
+            )
 
-            viewModel.updateLessee(lessee).observe(viewLifecycleOwner) { resource ->
+            viewModel.updateLessee(updatedLessee).observe(viewLifecycleOwner) { resource ->
                 if (resource != null) {
                     when (resource) {
                         is Resource.Success -> {
@@ -365,6 +359,9 @@ class LesseeDialog : BottomSheetDialogFragment() {
     }
 
     fun showForm(lesseeItm: Lessee?) {
+        val adapter = ArrayAdapter(requireContext(), R.layout.list_item, flats)
+        binding.flat.setAdapter(adapter)
+
         binding.prgIndicator.visibility = View.GONE
         binding.saveLessee.isEnabled = true
         binding.deleteLessee.isEnabled = true
@@ -408,7 +405,7 @@ class LesseeDialog : BottomSheetDialogFragment() {
             binding.lesseeRent.setText(lesseeItm.rent.toString())
             binding.lesseeFrom.setText(LocalDate.parse(lesseeItm.from).toShowDateFormat())
             binding.lesseeUntil.setText(LocalDate.parse(lesseeItm.until).toShowDateFormat())
-            selectedFlat = flats.first { it.id == lesseeItm.flatId }
+            selectedFlat = flats.firstOrNull { it.id == lesseeItm.flatId }
             binding.flat.setText(selectedFlat!!.name, false)
             binding.lesseeName.clearFocus()
             binding.lesseeAddress.clearFocus()

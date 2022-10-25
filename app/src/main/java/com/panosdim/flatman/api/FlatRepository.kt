@@ -25,14 +25,10 @@ class FlatRepository {
     private var client: Webservice = webservice
     private val scope = CoroutineScope(Dispatchers.Main)
     private val flatDao: FlatDao = db.flatDao()
-    private val result: MutableLiveData<Resource<List<Flat>>> = MutableLiveData()
-
-    fun getLiveData(): LiveData<List<Flat>> {
-        return flatDao.getLiveData()
-    }
+    private val flatsList: MutableLiveData<Resource<List<Flat>>> = MutableLiveData()
 
     fun get(): LiveData<Resource<List<Flat>>> {
-        result.postValue(Resource.Loading())
+        flatsList.postValue(Resource.Loading())
 
         if (prefs.flatFetchDate == -1L ||
             ChronoUnit.DAYS.between(fromEpochMilli(prefs.flatFetchDate), LocalDate.now()) >= 1
@@ -43,11 +39,11 @@ class FlatRepository {
                         val response = client.flat()
                         flatDao.deleteAndCreate(response)
                         prefs.flatFetchDate = LocalDate.now().toEpochMilli()
-                        result.postValue(Resource.Success(response))
+                        flatsList.postValue(Resource.Success(response))
                     }
                 } catch (ex: Exception) {
                     withContext(Dispatchers.IO) {
-                        result.postValue(Resource.Success(flatDao.get()))
+                        flatsList.postValue(Resource.Success(flatDao.get()))
                     }
                 }
             }
@@ -55,15 +51,15 @@ class FlatRepository {
 
         scope.launch {
             withContext(Dispatchers.IO) {
-                result.postValue(Resource.Success(flatDao.get()))
+                flatsList.postValue(Resource.Success(flatDao.get()))
             }
         }
 
-        return result
+        return flatsList
     }
 
-    fun delete(flat: Flat): LiveData<Resource<Flat>> {
-        val result: MutableLiveData<Resource<Flat>> = MutableLiveData()
+    fun delete(flat: Flat): LiveData<Resource<Void>> {
+        val result: MutableLiveData<Resource<Void>> = MutableLiveData()
         result.postValue(Resource.Loading())
 
         scope.launch {
@@ -74,6 +70,7 @@ class FlatRepository {
                         204 -> {
                             result.postValue(Resource.Success())
                             flatDao.delete(flat)
+                            flatsList.postValue(Resource.Success(flatDao.get()))
                         }
                         404 -> {
                             result.postValue(Resource.Error("Error deleting flat. Flat not found."))
@@ -95,8 +92,8 @@ class FlatRepository {
         return result
     }
 
-    fun add(flat: Flat): LiveData<Resource<Flat>> {
-        val result: MutableLiveData<Resource<Flat>> = MutableLiveData()
+    fun add(flat: Flat): LiveData<Resource<Void>> {
+        val result: MutableLiveData<Resource<Void>> = MutableLiveData()
         result.postValue(Resource.Loading())
 
         scope.launch {
@@ -105,8 +102,8 @@ class FlatRepository {
                     val response = client.flat(flat)
                     result.postValue(Resource.Success())
                     flatDao.insert(response)
+                    flatsList.postValue(Resource.Success(flatDao.get()))
                 }
-
             } catch (e: HttpException) {
                 result.postValue(Resource.Error("Error saving flat."))
             } catch (t: SocketTimeoutException) {
@@ -126,8 +123,8 @@ class FlatRepository {
         return result
     }
 
-    fun update(flat: Flat): LiveData<Resource<Flat>> {
-        val result: MutableLiveData<Resource<Flat>> = MutableLiveData()
+    fun update(flat: Flat): LiveData<Resource<Void>> {
+        val result: MutableLiveData<Resource<Void>> = MutableLiveData()
         result.postValue(Resource.Loading())
 
         scope.launch {
@@ -136,8 +133,8 @@ class FlatRepository {
                     val response = client.flat(flat.id!!, flat)
                     result.postValue(Resource.Success())
                     flatDao.update(response)
+                    flatsList.postValue(Resource.Success(flatDao.get()))
                 }
-
             } catch (e: HttpException) {
                 result.postValue(Resource.Error("Error updating flat."))
             } catch (t: SocketTimeoutException) {
@@ -158,15 +155,20 @@ class FlatRepository {
     }
 
     fun refresh() {
+        flatsList.postValue(Resource.Loading())
+
         scope.launch {
             try {
                 withContext(Dispatchers.IO) {
                     val response = client.flat()
                     flatDao.deleteAndCreate(response)
                     prefs.flatFetchDate = LocalDate.now().toEpochMilli()
+                    flatsList.postValue(Resource.Success(response))
                 }
             } catch (ex: Exception) {
-                println(ex)
+                withContext(Dispatchers.IO) {
+                    flatsList.postValue(Resource.Success(flatDao.get()))
+                }
             }
         }
     }

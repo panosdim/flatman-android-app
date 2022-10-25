@@ -101,11 +101,20 @@ class BalanceDialog : BottomSheetDialogFragment() {
             deleteBalance()
         }
 
-        flatViewModel.flats.observe(viewLifecycleOwner) { flats ->
-            val flatAdapter = ArrayAdapter(requireContext(), R.layout.list_item, flats)
-            binding.flat.setAdapter(flatAdapter)
-            selectedFlat = flatAdapter.getItem(0)
-            binding.flat.setText(selectedFlat?.name ?: "", false)
+        flatViewModel.getFlats().observe(viewLifecycleOwner) { resource ->
+            if (resource != null) {
+                when (resource) {
+                    is Resource.Success -> {
+                        val flatAdapter = resource.data?.let {
+                            ArrayAdapter(requireContext(), R.layout.list_item, it)
+                        }
+
+                        binding.flat.setAdapter(flatAdapter)
+                    }
+                    is Resource.Error -> {}
+                    is Resource.Loading -> {}
+                }
+            }
         }
 
         binding.flat.setOnItemClickListener { parent, _, position, _ ->

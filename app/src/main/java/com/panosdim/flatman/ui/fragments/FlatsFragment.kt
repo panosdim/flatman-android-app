@@ -19,41 +19,33 @@ import com.panosdim.flatman.viewmodel.FlatViewModel
 class FlatsFragment : Fragment() {
     private var _binding: FragmentFlatsBinding? = null
     private val binding get() = _binding!!
-    private val flatsViewAdapter =
-        FlatsAdapter(mutableListOf()) { flatItem: Flat -> flatItemClicked(flatItem) }
+    private val flatsAdapter = FlatsAdapter { flatItem: Flat -> flatItemClicked(flatItem) }
     private val viewModel: FlatViewModel by viewModels()
     private val flatDialog: FlatDialog = FlatDialog()
-
 
     private fun flatItemClicked(flat: Flat) {
         flatDialog.showNow(childFragmentManager, FlatDialog.TAG)
         flatDialog.showForm(flat)
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = FragmentFlatsBinding.inflate(inflater, container, false)
+        val root: View = binding.root
 
-        viewModel.getAllFlats().observe(viewLifecycleOwner) { resource ->
+        viewModel.getFlats().observe(viewLifecycleOwner) { resource ->
             if (resource != null) {
                 when (resource) {
                     is Resource.Success -> {
-                        binding.rvFlats.adapter =
-                            resource.data?.let {
-                                FlatsAdapter(it) { flatItem: Flat ->
-                                    flatItemClicked(
-                                        flatItem
-                                    )
-                                }
-                            } ?: FlatsAdapter(mutableListOf()) { flatItem: Flat ->
-                                flatItemClicked(
-                                    flatItem
-                                )
-                            }
+                        resource.data?.let { flats ->
+                            flatsAdapter.submitList(flats)
+                        }
 
                         binding.progressBar.visibility = View.GONE
                         binding.rvFlats.visibility = View.VISIBLE
-
-                        viewModel.getAllFlats().removeObservers(viewLifecycleOwner)
                     }
                     is Resource.Error -> {
                         Toast.makeText(
@@ -72,34 +64,19 @@ class FlatsFragment : Fragment() {
             }
         }
 
-        viewModel.flats.observe(viewLifecycleOwner) {
-            binding.rvFlats.adapter =
-                FlatsAdapter(it) { flatItem: Flat -> flatItemClicked(flatItem) }
+        val rvFlats = binding.rvFlats
+        rvFlats.setHasFixedSize(true)
+        rvFlats.layoutManager = LinearLayoutManager(root.context)
+        rvFlats.adapter = flatsAdapter
+
+        binding.addNewFlat.setOnClickListener {
+            flatDialog.showNow(childFragmentManager, FlatDialog.TAG)
+            flatDialog.showForm(null)
         }
 
         binding.swipeRefresh.setOnRefreshListener {
             viewModel.refreshFlats()
             binding.swipeRefresh.isRefreshing = false
-        }
-    }
-
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        _binding = FragmentFlatsBinding.inflate(inflater, container, false)
-        val root: View = binding.root
-
-        val rvFlats = binding.rvFlats
-        rvFlats.setHasFixedSize(true)
-        rvFlats.layoutManager = LinearLayoutManager(root.context)
-        rvFlats.adapter = flatsViewAdapter
-
-        binding.addNewFlat.setOnClickListener {
-            flatDialog.showNow(childFragmentManager, FlatDialog.TAG)
-            flatDialog.showForm(null)
         }
 
         return root

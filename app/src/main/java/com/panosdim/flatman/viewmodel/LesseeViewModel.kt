@@ -10,21 +10,20 @@ import com.panosdim.flatman.model.Lessee
 
 class LesseeViewModel : ViewModel() {
     private val lesseeRepository = LesseeRepository()
-    val lessee: LiveData<List<Lessee>> = lesseeRepository.getLiveData()
 
-    fun getAllLessee(): LiveData<Resource<List<Lessee>>> {
+    fun getLessees(): LiveData<Resource<List<Lessee>>> {
         return lesseeRepository.get()
     }
 
-    fun removeLessee(lessee: Lessee): LiveData<Resource<Lessee>> {
+    fun removeLessee(lessee: Lessee): LiveData<Resource<Void>> {
         return lesseeRepository.delete(lessee)
     }
 
-    fun addLessee(lessee: Lessee): LiveData<Resource<Lessee>> {
+    fun addLessee(lessee: Lessee): LiveData<Resource<Void>> {
         return lesseeRepository.add(lessee)
     }
 
-    fun updateLessee(lessee: Lessee): LiveData<Resource<Lessee>> {
+    fun updateLessee(lessee: Lessee): LiveData<Resource<Void>> {
         return lesseeRepository.update(lessee)
     }
 

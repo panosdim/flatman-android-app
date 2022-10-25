@@ -25,14 +25,10 @@ class LesseeRepository {
     private var postalClient: PostalCodeService = postalCodeService
     private val scope = CoroutineScope(Dispatchers.Main)
     private val lesseeDao: LesseeDao = db.lesseeDao()
-    private val result: MutableLiveData<Resource<List<Lessee>>> = MutableLiveData()
-
-    fun getLiveData(): LiveData<List<Lessee>> {
-        return lesseeDao.getLiveData()
-    }
+    private val lesseesList: MutableLiveData<Resource<List<Lessee>>> = MutableLiveData()
 
     fun get(): LiveData<Resource<List<Lessee>>> {
-        result.postValue(Resource.Loading())
+        lesseesList.postValue(Resource.Loading())
 
         if (prefs.lesseeFetchDate == -1L ||
             ChronoUnit.DAYS.between(fromEpochMilli(prefs.lesseeFetchDate), LocalDate.now()) >= 1
@@ -43,11 +39,11 @@ class LesseeRepository {
                         val response = client.lessee()
                         lesseeDao.deleteAndCreate(response)
                         prefs.lesseeFetchDate = LocalDate.now().toEpochMilli()
-                        result.postValue(Resource.Success(response))
+                        lesseesList.postValue(Resource.Success(response))
                     }
                 } catch (ex: Exception) {
                     withContext(Dispatchers.IO) {
-                        result.postValue(Resource.Success(lesseeDao.get()))
+                        lesseesList.postValue(Resource.Success(lesseeDao.get()))
                     }
                 }
             }
@@ -55,15 +51,15 @@ class LesseeRepository {
 
         scope.launch {
             withContext(Dispatchers.IO) {
-                result.postValue(Resource.Success(lesseeDao.get()))
+                lesseesList.postValue(Resource.Success(lesseeDao.get()))
             }
         }
 
-        return result
+        return lesseesList
     }
 
-    fun delete(lessee: Lessee): LiveData<Resource<Lessee>> {
-        val result: MutableLiveData<Resource<Lessee>> = MutableLiveData()
+    fun delete(lessee: Lessee): LiveData<Resource<Void>> {
+        val result: MutableLiveData<Resource<Void>> = MutableLiveData()
         result.postValue(Resource.Loading())
 
         scope.launch {
@@ -74,6 +70,7 @@ class LesseeRepository {
                         204 -> {
                             lesseeDao.delete(lessee)
                             result.postValue(Resource.Success())
+                            lesseesList.postValue(Resource.Success(lesseeDao.get()))
                         }
                         404 -> {
                             result.postValue(Resource.Error("Error deleting lessee. Lessee not found."))
@@ -92,8 +89,8 @@ class LesseeRepository {
         return result
     }
 
-    fun add(lessee: Lessee): LiveData<Resource<Lessee>> {
-        val result: MutableLiveData<Resource<Lessee>> = MutableLiveData()
+    fun add(lessee: Lessee): LiveData<Resource<Void>> {
+        val result: MutableLiveData<Resource<Void>> = MutableLiveData()
         result.postValue(Resource.Loading())
 
         scope.launch {
@@ -102,8 +99,8 @@ class LesseeRepository {
                     val response = client.lessee(lessee)
                     lesseeDao.insert(response)
                     result.postValue(Resource.Success())
+                    lesseesList.postValue(Resource.Success(lesseeDao.get()))
                 }
-
             } catch (e: HttpException) {
                 result.postValue(Resource.Error("Error saving lessee."))
             } catch (t: SocketTimeoutException) {
@@ -123,8 +120,8 @@ class LesseeRepository {
         return result
     }
 
-    fun update(lessee: Lessee): LiveData<Resource<Lessee>> {
-        val result: MutableLiveData<Resource<Lessee>> = MutableLiveData()
+    fun update(lessee: Lessee): LiveData<Resource<Void>> {
+        val result: MutableLiveData<Resource<Void>> = MutableLiveData()
         result.postValue(Resource.Loading())
 
         scope.launch {
@@ -133,6 +130,7 @@ class LesseeRepository {
                     val response = client.lessee(lessee.id!!, lessee)
                     lesseeDao.update(response)
                     result.postValue(Resource.Success())
+                    lesseesList.postValue(Resource.Success(lesseeDao.get()))
                 }
 
             } catch (e: HttpException) {
@@ -155,12 +153,15 @@ class LesseeRepository {
     }
 
     fun refresh() {
+        lesseesList.postValue(Resource.Loading())
+
         scope.launch {
             try {
                 withContext(Dispatchers.IO) {
                     val response = client.lessee()
                     lesseeDao.deleteAndCreate(response)
                     prefs.lesseeFetchDate = LocalDate.now().toEpochMilli()
+                    lesseesList.postValue(Resource.Success(response))
                 }
             } catch (ex: Exception) {
                 println(ex)

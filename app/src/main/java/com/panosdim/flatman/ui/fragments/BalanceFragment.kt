@@ -88,22 +88,29 @@ class BalanceFragment : Fragment() {
             balanceDialog.showForm(null)
         }
 
+        flatViewModel.getFlats().observe(viewLifecycleOwner) { resource ->
+            if (resource != null) {
+                when (resource) {
+                    is Resource.Success -> {
+                        if (resource.data != null && resource.data.isNotEmpty()) {
+                            binding.addNewBalance.isEnabled = true
+                            flatSelectAdapter =
+                                ArrayAdapter(requireContext(), R.layout.list_item, resource.data)
 
-        flatViewModel.flats.observe(viewLifecycleOwner) {
-            if (it != null && it.isNotEmpty()) {
-                binding.addNewBalance.isEnabled = true
-                flatSelectAdapter =
-                    ArrayAdapter(requireContext(), R.layout.list_item, it)
-
-                updateBalanceAdapter()
-            } else {
-                binding.addNewBalance.isEnabled = false
-                binding.rvBalance.adapter =
-                    BalanceAdapter(mutableListOf()) { balanceItem: Balance ->
-                        balanceItemClicked(
-                            balanceItem
-                        )
+                            updateBalanceAdapter()
+                        } else {
+                            binding.addNewBalance.isEnabled = false
+                            binding.rvBalance.adapter =
+                                BalanceAdapter(mutableListOf()) { balanceItem: Balance ->
+                                    balanceItemClicked(
+                                        balanceItem
+                                    )
+                                }
+                        }
                     }
+                    is Resource.Error -> {}
+                    is Resource.Loading -> {}
+                }
             }
         }
 

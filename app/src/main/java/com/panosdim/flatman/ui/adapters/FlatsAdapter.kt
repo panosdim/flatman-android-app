@@ -1,17 +1,20 @@
 package com.panosdim.flatman.ui.adapters
 
+import android.content.res.Resources
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.panosdim.flatman.databinding.RowFlatBinding
 import com.panosdim.flatman.model.Flat
+import com.panosdim.flatman.utils.setBottomMargin
 
 
 class FlatsAdapter(
-    private val flatsList: List<Flat>,
     private val clickListener: (Flat) -> Unit
 ) :
-    RecyclerView.Adapter<FlatsAdapter.FlatViewHolder>() {
+    ListAdapter<Flat, FlatsAdapter.FlatViewHolder>(FlatDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FlatViewHolder {
         val binding = RowFlatBinding
@@ -20,8 +23,20 @@ class FlatsAdapter(
     }
 
     override fun onBindViewHolder(holder: FlatViewHolder, position: Int) {
+        if (position + 1 == itemCount) {
+            // It is the last item of the list
+            // Set bottom margin
+            setBottomMargin(
+                holder.itemView,
+                (64 * Resources.getSystem().displayMetrics.density).toInt()
+            )
+        } else {
+            // Reset bottom margin
+            setBottomMargin(holder.itemView, 0)
+        }
+        
         with(holder) {
-            with(flatsList[position]) {
+            with(getItem(position)) {
                 binding.rowFlatName.text = name
                 binding.rowFlatAddress.text = address
                 binding.rowFlatFloor.text =
@@ -31,8 +46,16 @@ class FlatsAdapter(
         }
     }
 
-    override fun getItemCount() = flatsList.size
-
     inner class FlatViewHolder(val binding: RowFlatBinding) :
         RecyclerView.ViewHolder(binding.root)
+}
+
+class FlatDiffCallback : DiffUtil.ItemCallback<Flat>() {
+    override fun areItemsTheSame(oldItem: Flat, newItem: Flat): Boolean {
+        return oldItem.id == newItem.id
+    }
+
+    override fun areContentsTheSame(oldItem: Flat, newItem: Flat): Boolean {
+        return oldItem == newItem
+    }
 }

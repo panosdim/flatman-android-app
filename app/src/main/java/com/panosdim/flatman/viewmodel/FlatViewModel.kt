@@ -9,21 +9,20 @@ import com.panosdim.flatman.model.Flat
 
 class FlatViewModel : ViewModel() {
     private val flatRepository = FlatRepository()
-    val flats: LiveData<List<Flat>> = flatRepository.getLiveData()
 
-    fun getAllFlats(): LiveData<Resource<List<Flat>>> {
+    fun getFlats(): LiveData<Resource<List<Flat>>> {
         return flatRepository.get()
     }
 
-    fun removeFlat(flat: Flat): LiveData<Resource<Flat>> {
+    fun removeFlat(flat: Flat): LiveData<Resource<Void>> {
         return flatRepository.delete(flat)
     }
 
-    fun addFlat(flat: Flat): LiveData<Resource<Flat>> {
+    fun addFlat(flat: Flat): LiveData<Resource<Void>> {
         return flatRepository.add(flat)
     }
 
-    fun updateFlat(flat: Flat): LiveData<Resource<Flat>> {
+    fun updateFlat(flat: Flat): LiveData<Resource<Void>> {
         return flatRepository.update(flat)
     }
 

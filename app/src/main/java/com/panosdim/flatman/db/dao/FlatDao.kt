@@ -1,6 +1,5 @@
 package com.panosdim.flatman.db.dao
 
-import androidx.lifecycle.LiveData
 import androidx.room.*
 import com.panosdim.flatman.model.Flat
 
@@ -8,9 +7,6 @@ import com.panosdim.flatman.model.Flat
 interface FlatDao {
     @Query("SELECT * FROM Flat")
     suspend fun get(): List<Flat>
-
-    @Query("SELECT * FROM Flat")
-    fun getLiveData(): LiveData<List<Flat>>
 
     @Insert
     suspend fun insert(flat: Flat)

@@ -156,11 +156,14 @@ class FlatDialog : BottomSheetDialogFragment() {
             dismiss()
         } else {
             // Update Flat
-            flat.name = binding.flatName.text.toString()
-            flat.address = binding.flatAddress.text.toString()
-            flat.floor = binding.flatFloor.text.toString().toInt()
+            val updatedFlat = flat.copy(
+                name = binding.flatName.text.toString(),
+                address = binding.flatAddress.text.toString(),
+                floor = binding.flatFloor.text.toString().toInt()
+            )
 
-            viewModel.updateFlat(flat).observe(viewLifecycleOwner) { resource ->
+
+            viewModel.updateFlat(updatedFlat).observe(viewLifecycleOwner) { resource ->
                 if (resource != null) {
                     when (resource) {
                         is Resource.Success -> {

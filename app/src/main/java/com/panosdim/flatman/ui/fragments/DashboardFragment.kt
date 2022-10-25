@@ -5,7 +5,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.github.mikephil.charting.charts.LineChart
@@ -14,26 +13,30 @@ import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.panosdim.flatman.R
 import com.panosdim.flatman.api.data.Resource
+import com.panosdim.flatman.databinding.FragmentDashboardBinding
 import com.panosdim.flatman.model.Balance
 import com.panosdim.flatman.utils.MyValueFormatter
 import com.panosdim.flatman.utils.MyXAxisFormatter
 import com.panosdim.flatman.utils.moneyFormat
+import com.panosdim.flatman.utils.resolveColorAttr
 import com.panosdim.flatman.viewmodel.BalanceViewModel
-import kotlinx.android.synthetic.main.fragment_dashboard.*
 import kotlin.math.abs
 
 
 class DashboardFragment : Fragment() {
     private lateinit var chartData: List<Entry>
+    private var _binding: FragmentDashboardBinding? = null
+    private val binding get() = _binding!!
     private val viewModel: BalanceViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        val root = inflater.inflate(R.layout.fragment_dashboard, container, false)
-        val chart: LineChart = root.findViewById(R.id.chart)
+    ): View {
+        _binding = FragmentDashboardBinding.inflate(inflater, container, false)
+        val root: View = binding.root
+        val chart: LineChart = binding.chart
 
         viewModel.balance.observe(viewLifecycleOwner) { bal ->
             if (bal != null && bal.isNotEmpty()) {
@@ -57,9 +60,9 @@ class DashboardFragment : Fragment() {
             if (next < 0) tot + next else tot
         }
         val totSav = totInc - abs(totExp)
-        total_income.text = moneyFormat(totInc)
-        total_expenses.text = moneyFormat(abs(totExp))
-        total_savings.text = moneyFormat(totSav)
+        binding.totalIncome.text = moneyFormat(totInc)
+        binding.totalExpenses.text = moneyFormat(abs(totExp))
+        binding.totalSavings.text = moneyFormat(totSav)
 
         chartData = calculateChartData(balList)
         initializeChart(chart)
@@ -74,11 +77,11 @@ class DashboardFragment : Fragment() {
                     is Resource.Success -> {
                         resource.data?.let {
                             if (it.isNotEmpty()) {
-                                updateDashboard(it, chart)
+                                updateDashboard(it, binding.chart)
                             }
                         }
-                        progress_bar.visibility = View.GONE
-                        ll_dashboard.visibility = View.VISIBLE
+                        binding.progressBar.visibility = View.GONE
+                        binding.llDashboard.visibility = View.VISIBLE
 
                         viewModel.getAllBalance().removeObservers(viewLifecycleOwner)
                     }
@@ -88,46 +91,33 @@ class DashboardFragment : Fragment() {
                             resource.message,
                             Toast.LENGTH_LONG
                         ).show()
-                        progress_bar.visibility = View.GONE
-                        ll_dashboard.visibility = View.VISIBLE
+                        binding.progressBar.visibility = View.GONE
+                        binding.llDashboard.visibility = View.VISIBLE
                     }
                     is Resource.Loading -> {
-                        progress_bar.visibility = View.VISIBLE
-                        ll_dashboard.visibility = View.GONE
+                        binding.progressBar.visibility = View.VISIBLE
+                        binding.llDashboard.visibility = View.GONE
                     }
                 }
             }
         }
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
     private fun initializeChart(chart: LineChart) {
         val set = LineDataSet(chartData, "Savings Per Year")
-        set.color = ContextCompat.getColor(
-            requireContext(),
-            R.color.secondaryDarkColor
-        )
+        set.color = requireContext().resolveColorAttr(R.attr.colorSavings)
         set.mode = LineDataSet.Mode.HORIZONTAL_BEZIER
         set.cubicIntensity = 0.05f
-        set.setCircleColor(
-            ContextCompat.getColor(
-                requireContext(),
-                R.color.secondaryColor
-            )
-        )
-        set.circleHoleColor =
-            ContextCompat.getColor(
-                requireContext(),
-                R.color.secondaryLightColor
-            )
-
+        set.setCircleColor(requireContext().resolveColorAttr(R.attr.colorTertiary))
+        set.circleHoleColor = requireContext().resolveColorAttr(R.attr.colorPrimary)
 
         val data = LineData(set)
-        data.setValueTextColor(
-            ContextCompat.getColor(
-                requireContext(),
-                R.color.lineColor
-            )
-        )
+        data.setValueTextColor(requireContext().resolveColorAttr(R.attr.colorOnSurface))
         data.setValueFormatter(MyValueFormatter())
         data.setValueTextSize(14f)
 
@@ -152,10 +142,7 @@ class DashboardFragment : Fragment() {
 
         chart.xAxis.isEnabled = true
         chart.xAxis.textSize = 14f
-        chart.xAxis.textColor = ContextCompat.getColor(
-            requireContext(),
-            R.color.primaryTextColor
-        )
+        chart.xAxis.textColor = requireContext().resolveColorAttr(R.attr.colorOnSurface)
         chart.xAxis.valueFormatter = MyXAxisFormatter()
         chart.xAxis.setDrawAxisLine(true)
         chart.xAxis.setDrawGridLines(false)

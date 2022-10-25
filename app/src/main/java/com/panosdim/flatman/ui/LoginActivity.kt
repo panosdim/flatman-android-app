@@ -16,10 +16,10 @@ import com.panosdim.flatman.api.data.LoginRequest
 import com.panosdim.flatman.api.data.LoginResponse
 import com.panosdim.flatman.api.webservice
 import com.panosdim.flatman.auth
+import com.panosdim.flatman.databinding.ActivityLoginBinding
 import com.panosdim.flatman.model.User
 import com.panosdim.flatman.prefs
 import com.panosdim.flatman.utils.generateTextWatcher
-import kotlinx.android.synthetic.main.activity_login.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -27,25 +27,28 @@ import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 
 class LoginActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityLoginBinding
     private var client: Webservice = webservice
     private val textWatcher = generateTextWatcher(::validateForm)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setContentView(R.layout.activity_login)
+        binding = ActivityLoginBinding.inflate(layoutInflater)
+        val view = binding.root
+        setContentView(view)
 
-        username.addTextChangedListener(textWatcher)
-        password.addTextChangedListener(textWatcher)
+        binding.username.addTextChangedListener(textWatcher)
+        binding.password.addTextChangedListener(textWatcher)
 
-        password.setOnEditorActionListener { _, actionId, event ->
+        binding.password.setOnEditorActionListener { _, actionId, event ->
             if (isFormValid() && (event != null && event.keyCode == KeyEvent.KEYCODE_ENTER || actionId == EditorInfo.IME_ACTION_DONE)) {
                 login()
             }
             false
         }
 
-        login.setOnClickListener {
+        binding.login.setOnClickListener {
             login()
         }
     }
@@ -67,10 +70,10 @@ class LoginActivity : AppCompatActivity() {
     private fun login() {
         val scope = CoroutineScope(Dispatchers.Main)
         lateinit var response: LoginResponse
-        val username = username.text.toString()
-        val password = password.text.toString()
-        loading.visibility = View.VISIBLE
-        login.isEnabled = false
+        val username = binding.username.text.toString()
+        val password = binding.password.text.toString()
+        binding.loading.visibility = View.VISIBLE
+        binding.login.isEnabled = false
 
         scope.launch {
             try {
@@ -103,29 +106,29 @@ class LoginActivity : AppCompatActivity() {
                 Toast.makeText(applicationContext, R.string.login_failed, Toast.LENGTH_SHORT)
                     .show()
             } finally {
-                loading.visibility = View.GONE
-                login.isEnabled = true
+                binding.loading.visibility = View.GONE
+                binding.login.isEnabled = true
             }
         }
     }
 
     private fun validateForm() {
-        login.isEnabled = true
-        username.error = null
-        password.error = null
+        binding.login.isEnabled = true
+        binding.username.error = null
+        binding.password.error = null
 
         // Store values.
-        val email = username.text.toString()
-        val pass = password.text.toString()
+        val email = binding.username.text.toString()
+        val pass = binding.password.text.toString()
 
         if (!isUserNameValid(email)) {
-            username.error = getString(R.string.invalid_username)
-            login.isEnabled = false
+            binding.username.error = getString(R.string.invalid_username)
+            binding.login.isEnabled = false
         }
 
         if (!isPasswordValid(pass)) {
-            password.error = getString(R.string.invalid_password)
-            login.isEnabled = false
+            binding.password.error = getString(R.string.invalid_password)
+            binding.login.isEnabled = false
         }
     }
 
@@ -143,6 +146,6 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun isFormValid(): Boolean {
-        return username.error == null && password.error == null
+        return binding.username.error == null && binding.password.error == null
     }
 }

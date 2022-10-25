@@ -21,6 +21,7 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                style="?attr/materialCardViewFilledStyle"
                 android:layout_margin="8dp">
 
                 <LinearLayout
@@ -29,12 +30,11 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <!-- Title, secondary and supporting text -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/income"
-                        android:textAppearance="?attr/textAppearanceSubtitle1" />
+                        android:textAppearance="?attr/textAppearanceTitleMedium" />
 
                     <TextView
                         android:id="@+id/total_income"
@@ -42,9 +42,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:text=""
-                        android:textAppearance="?attr/textAppearanceHeadline6"
-                        android:textColor="@color/green"
-                        android:textSize="12sp"
+                        android:textAppearance="?attr/textAppearanceLabelMedium"
+                        android:textColor="?colorIncome"
                         android:textStyle="bold" />
 
                 </LinearLayout>
@@ -54,6 +53,7 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                style="?attr/materialCardViewFilledStyle"
                 android:layout_margin="8dp">
 
                 <LinearLayout
@@ -62,12 +62,11 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <!-- Title, secondary and supporting text -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/expenses"
-                        android:textAppearance="?attr/textAppearanceSubtitle1" />
+                        android:textAppearance="?attr/textAppearanceTitleMedium" />
 
                     <TextView
                         android:id="@+id/total_expenses"
@@ -75,9 +74,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:text=""
-                        android:textAppearance="?attr/textAppearanceHeadline6"
-                        android:textColor="@color/red"
-                        android:textSize="12sp"
+                        android:textAppearance="?attr/textAppearanceLabelMedium"
+                        android:textColor="?colorExpense"
                         android:textStyle="bold" />
 
                 </LinearLayout>
@@ -87,6 +85,7 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                style="?attr/materialCardViewFilledStyle"
                 android:layout_margin="8dp">
 
                 <LinearLayout
@@ -95,12 +94,11 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <!-- Title, secondary and supporting text -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/savings"
-                        android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1" />
+                        android:textAppearance="?attr/textAppearanceTitleMedium" />
 
                     <TextView
                         android:id="@+id/total_savings"
@@ -108,9 +106,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:text=""
-                        android:textAppearance="?attr/textAppearanceHeadline6"
-                        android:textColor="@color/blue"
-                        android:textSize="12sp"
+                        android:textAppearance="?attr/textAppearanceLabelMedium"
+                        android:textColor="?colorSavings"
                         android:textStyle="bold" />
 
                 </LinearLayout>
@@ -123,7 +120,7 @@
             android:layout_height="wrap_content"
             android:text="@string/savings_per_year"
             android:textAlignment="center"
-            android:textSize="18sp" />
+            android:textAppearance="?attr/textAppearanceTitleLarge" />
 
         <com.github.mikephil.charting.charts.LineChart
             android:id="@+id/chart"

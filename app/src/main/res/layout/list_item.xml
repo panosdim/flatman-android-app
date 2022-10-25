@@ -5,4 +5,4 @@
     android:padding="8dp"
     android:ellipsize="end"
     android:maxLines="1"
-    android:textSize="20sp" />
+    android:textAppearance="?attr/textAppearanceTitleLarge" />

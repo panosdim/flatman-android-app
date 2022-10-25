@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">FlatMan</string>
+    <string name="app_name">Flat Man</string>
     <!-- Strings related to login -->
     <string name="prompt_email">Email</string>
     <string name="prompt_password">Password</string>
@@ -47,4 +47,14 @@
     <string name="permission_title">Permission Required</string>
     <string name="dismiss">Dismiss</string>
     <string name="permission_description">Write to external storage is required in order to download the new app version apk file.</string>
+    <string name="new_flat">New Flat</string>
+    <string name="new_lessee">New Lessee</string>
+    <string name="delete_lessee_title">Delete Lessee?</string>
+    <string name="delete_lessee_supporting_text">If you delete the lessee you will not be able to recover it.</string>
+    <string name="decline">Cancel</string>
+    <string name="accept">Delete</string>
+    <string name="new_balance">New Balance</string>
+    <string name="delete_flat_title">Delete Flat?</string>
+    <string name="delete_flat_supporting_text">If you delete the flat you will not be able to recover it.</string>
+    <string name="filter_lessees">Filter Lessees</string>
 </resources>

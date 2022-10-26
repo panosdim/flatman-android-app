@@ -11,10 +11,16 @@ import com.panosdim.flatman.model.Flat
 import com.panosdim.flatman.utils.setBottomMargin
 
 
-class FlatsAdapter(
-    private val clickListener: (Flat) -> Unit
-) :
-    ListAdapter<Flat, FlatsAdapter.FlatViewHolder>(FlatDiffCallback()) {
+class FlatsAdapter(private val clickListener: (Flat) -> Unit) :
+    ListAdapter<Flat, FlatsAdapter.FlatViewHolder>(object : DiffUtil.ItemCallback<Flat>() {
+        override fun areItemsTheSame(oldItem: Flat, newItem: Flat): Boolean {
+            return oldItem.id == newItem.id
+        }
+
+        override fun areContentsTheSame(oldItem: Flat, newItem: Flat): Boolean {
+            return oldItem == newItem
+        }
+    }) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FlatViewHolder {
         val binding = RowFlatBinding
@@ -24,17 +30,14 @@ class FlatsAdapter(
 
     override fun onBindViewHolder(holder: FlatViewHolder, position: Int) {
         if (position + 1 == itemCount) {
-            // It is the last item of the list
-            // Set bottom margin
             setBottomMargin(
                 holder.itemView,
                 (64 * Resources.getSystem().displayMetrics.density).toInt()
             )
         } else {
-            // Reset bottom margin
             setBottomMargin(holder.itemView, 0)
         }
-        
+
         with(holder) {
             with(getItem(position)) {
                 binding.rowFlatName.text = name
@@ -48,14 +51,4 @@ class FlatsAdapter(
 
     inner class FlatViewHolder(val binding: RowFlatBinding) :
         RecyclerView.ViewHolder(binding.root)
-}
-
-class FlatDiffCallback : DiffUtil.ItemCallback<Flat>() {
-    override fun areItemsTheSame(oldItem: Flat, newItem: Flat): Boolean {
-        return oldItem.id == newItem.id
-    }
-
-    override fun areContentsTheSame(oldItem: Flat, newItem: Flat): Boolean {
-        return oldItem == newItem
-    }
 }

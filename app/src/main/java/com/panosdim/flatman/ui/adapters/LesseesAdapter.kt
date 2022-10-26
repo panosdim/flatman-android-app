@@ -21,7 +21,16 @@ class LesseesAdapter(
     private val flatsList: List<Flat>,
     private val clickListener: (Lessee) -> Unit
 ) :
-    ListAdapter<Lessee, LesseesAdapter.LesseeViewHolder>(LesseeDiffCallback()) {
+    ListAdapter<Lessee, LesseesAdapter.LesseeViewHolder>(object : DiffUtil.ItemCallback<Lessee>() {
+        override fun areItemsTheSame(oldItem: Lessee, newItem: Lessee): Boolean {
+            return oldItem.id == newItem.id
+        }
+
+        override fun areContentsTheSame(oldItem: Lessee, newItem: Lessee): Boolean {
+            return oldItem == newItem
+        }
+
+    }) {
     private val dateFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
     private val today = LocalDate.now()
 
@@ -33,14 +42,11 @@ class LesseesAdapter(
 
     override fun onBindViewHolder(holder: LesseeViewHolder, position: Int) {
         if (position + 1 == itemCount) {
-            // It is the last item of the list
-            // Set bottom margin
             setBottomMargin(
                 holder.itemView,
                 (64 * Resources.getSystem().displayMetrics.density).toInt()
             )
         } else {
-            // Reset bottom margin
             setBottomMargin(holder.itemView, 0)
         }
 
@@ -70,14 +76,4 @@ class LesseesAdapter(
 
     inner class LesseeViewHolder(val binding: RowLesseeBinding) :
         RecyclerView.ViewHolder(binding.root)
-}
-
-class LesseeDiffCallback : DiffUtil.ItemCallback<Lessee>() {
-    override fun areItemsTheSame(oldItem: Lessee, newItem: Lessee): Boolean {
-        return oldItem.id == newItem.id
-    }
-
-    override fun areContentsTheSame(oldItem: Lessee, newItem: Lessee): Boolean {
-        return oldItem == newItem
-    }
 }

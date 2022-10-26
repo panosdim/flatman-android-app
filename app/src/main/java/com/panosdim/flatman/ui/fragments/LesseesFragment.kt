@@ -13,6 +13,7 @@ import com.panosdim.flatman.databinding.FragmentLesseesBinding
 import com.panosdim.flatman.model.Lessee
 import com.panosdim.flatman.ui.adapters.LesseesAdapter
 import com.panosdim.flatman.ui.dialogs.LesseeDialog
+import com.panosdim.flatman.ui.dialogs.LesseesFilterDialog
 import com.panosdim.flatman.viewmodel.FlatViewModel
 import com.panosdim.flatman.viewmodel.LesseeViewModel
 
@@ -27,6 +28,28 @@ class LesseesFragment : Fragment() {
         lesseeItemClicked(
             lesseeItem
         )
+    }
+    private var lesseesList: List<Lessee> = listOf()
+    private val lesseesFilterDialog: LesseesFilterDialog =
+        LesseesFilterDialog { filters ->
+            filterLessees(filters)
+        }
+
+    private fun filterLessees(filters: List<Int>) {
+        if (filters.isEmpty()) {
+            if (lesseesList.isNotEmpty()) {
+                lesseesAdapter.submitList(lesseesList)
+                lesseesList = listOf()
+            }
+        } else {
+            if (lesseesList.isEmpty()) {
+                lesseesList = lesseesAdapter.currentList.map { it.copy() }.toList()
+            }
+
+            val filteredList = lesseesList.map { it.copy() }.toMutableList()
+            filteredList.retainAll { filters.contains(it.flatId) }
+            lesseesAdapter.submitList(filteredList)
+        }
     }
 
     private fun lesseeItemClicked(lessee: Lessee) {
@@ -51,6 +74,10 @@ class LesseesFragment : Fragment() {
             lesseeDialog.showForm(null)
         }
 
+        binding.filterLessees.setOnClickListener {
+            lesseesFilterDialog.showNow(childFragmentManager, LesseesFilterDialog.TAG)
+        }
+
         flatViewModel.getFlats().observe(viewLifecycleOwner) { resource ->
             if (resource != null) {
                 when (resource) {
@@ -66,6 +93,7 @@ class LesseesFragment : Fragment() {
                             }
                             binding.rvLessees.adapter = lesseesAdapter
                             lesseeDialog.flats = resource.data
+                            lesseesFilterDialog.flats = resource.data
 
                             // Fetch Lessees
                             viewModel.getLessees().observe(viewLifecycleOwner) { res ->
@@ -77,6 +105,8 @@ class LesseesFragment : Fragment() {
 
                                             res.data?.let { lessees ->
                                                 lesseesAdapter.submitList(lessees)
+                                                lesseesList = lessees.map { it.copy() }.toList()
+                                                filterLessees(lesseesFilterDialog.filters)
                                             }
                                         }
                                         is Resource.Error -> {

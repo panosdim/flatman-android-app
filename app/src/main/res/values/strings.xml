@@ -57,4 +57,6 @@
     <string name="delete_flat_title">Delete Flat?</string>
     <string name="delete_flat_supporting_text">If you delete the flat you will not be able to recover it.</string>
     <string name="filter_lessees">Filter Lessees</string>
+    <string name="set">Set</string>
+    <string name="clear">Clear</string>
 </resources>

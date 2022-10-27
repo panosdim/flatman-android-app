@@ -29,28 +29,7 @@ class LesseesFragment : Fragment() {
             lesseeItem
         )
     }
-    private var lesseesList: List<Lessee> = listOf()
-    private val lesseesFilterDialog: LesseesFilterDialog =
-        LesseesFilterDialog { filters ->
-            filterLessees(filters)
-        }
-
-    private fun filterLessees(filters: List<Int>) {
-        if (filters.isEmpty()) {
-            if (lesseesList.isNotEmpty()) {
-                lesseesAdapter.submitList(lesseesList)
-                lesseesList = listOf()
-            }
-        } else {
-            if (lesseesList.isEmpty()) {
-                lesseesList = lesseesAdapter.currentList.map { it.copy() }.toList()
-            }
-
-            val filteredList = lesseesList.map { it.copy() }.toMutableList()
-            filteredList.retainAll { filters.contains(it.flatId) }
-            lesseesAdapter.submitList(filteredList)
-        }
-    }
+    private val lesseesFilterDialog: LesseesFilterDialog = LesseesFilterDialog()
 
     private fun lesseeItemClicked(lessee: Lessee) {
         lesseeDialog.showNow(childFragmentManager, LesseeDialog.TAG)
@@ -105,8 +84,7 @@ class LesseesFragment : Fragment() {
 
                                             res.data?.let { lessees ->
                                                 lesseesAdapter.submitList(lessees)
-                                                lesseesList = lessees.map { it.copy() }.toList()
-                                                filterLessees(lesseesFilterDialog.filters)
+                                                lesseesFilterDialog.lesseesAdapter = lesseesAdapter
                                             }
                                         }
                                         is Resource.Error -> {

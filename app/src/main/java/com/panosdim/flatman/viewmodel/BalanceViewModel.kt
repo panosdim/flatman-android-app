@@ -8,21 +8,20 @@ import com.panosdim.flatman.model.Balance
 
 class BalanceViewModel : ViewModel() {
     private val balanceRepository = BalanceRepository()
-    val balance: LiveData<List<Balance>> = balanceRepository.getLiveData()
 
-    fun getAllBalance(): LiveData<Resource<List<Balance>>> {
+    fun getBalance(): LiveData<Resource<List<Balance>>> {
         return balanceRepository.get()
     }
 
-    fun removeBalance(balance: Balance): LiveData<Resource<Balance>> {
+    fun removeBalance(balance: Balance): LiveData<Resource<Void>> {
         return balanceRepository.delete(balance)
     }
 
-    fun addBalance(balance: Balance): LiveData<Resource<Balance>> {
+    fun addBalance(balance: Balance): LiveData<Resource<Void>> {
         return balanceRepository.add(balance)
     }
 
-    fun updateBalance(balance: Balance): LiveData<Resource<Balance>> {
+    fun updateBalance(balance: Balance): LiveData<Resource<Void>> {
         return balanceRepository.update(balance)
     }
 

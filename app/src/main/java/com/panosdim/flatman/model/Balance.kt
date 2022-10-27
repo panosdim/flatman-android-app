@@ -7,9 +7,9 @@ import com.google.gson.annotations.SerializedName
 
 @Entity
 data class Balance(
-    @PrimaryKey var id: Int? = null,
-    @ColumnInfo var date: String,
-    @ColumnInfo var comment: String,
-    @ColumnInfo @SerializedName("flat_id") var flatId: Int,
-    @ColumnInfo var amount: Float
+    @PrimaryKey val id: Int? = null,
+    @ColumnInfo val date: String,
+    @ColumnInfo val comment: String,
+    @ColumnInfo @SerializedName("flat_id") val flatId: Int,
+    @ColumnInfo val amount: Float
 )

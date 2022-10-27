@@ -25,14 +25,10 @@ class BalanceRepository {
     private var client: Webservice = webservice
     private val scope = CoroutineScope(Dispatchers.Main)
     private val balanceDao: BalanceDao = db.balanceDao()
-    private val result: MutableLiveData<Resource<List<Balance>>> = MutableLiveData()
-
-    fun getLiveData(): LiveData<List<Balance>> {
-        return balanceDao.getLiveData()
-    }
+    private val balanceList: MutableLiveData<Resource<List<Balance>>> = MutableLiveData()
 
     fun get(): LiveData<Resource<List<Balance>>> {
-        result.postValue(Resource.Loading())
+        balanceList.postValue(Resource.Loading())
 
         if (prefs.balanceFetchDate == -1L ||
             ChronoUnit.DAYS.between(fromEpochMilli(prefs.balanceFetchDate), LocalDate.now()) >= 1
@@ -43,11 +39,11 @@ class BalanceRepository {
                         val response = client.balance()
                         balanceDao.deleteAndCreate(response)
                         prefs.balanceFetchDate = LocalDate.now().toEpochMilli()
-                        result.postValue(Resource.Success(response))
+                        balanceList.postValue(Resource.Success(response))
                     }
                 } catch (ex: Exception) {
                     withContext(Dispatchers.IO) {
-                        result.postValue(Resource.Success(balanceDao.get()))
+                        balanceList.postValue(Resource.Success(balanceDao.get()))
                     }
                 }
             }
@@ -55,15 +51,15 @@ class BalanceRepository {
 
         scope.launch {
             withContext(Dispatchers.IO) {
-                result.postValue(Resource.Success(balanceDao.get()))
+                balanceList.postValue(Resource.Success(balanceDao.get()))
             }
         }
 
-        return result
+        return balanceList
     }
 
-    fun delete(balance: Balance): LiveData<Resource<Balance>> {
-        val result: MutableLiveData<Resource<Balance>> = MutableLiveData()
+    fun delete(balance: Balance): LiveData<Resource<Void>> {
+        val result: MutableLiveData<Resource<Void>> = MutableLiveData()
         result.postValue(Resource.Loading())
 
         scope.launch {
@@ -74,6 +70,7 @@ class BalanceRepository {
                         204 -> {
                             balanceDao.delete(balance)
                             result.postValue(Resource.Success())
+                            balanceList.postValue(Resource.Success(balanceDao.get()))
                         }
                         404 -> {
                             result.postValue(Resource.Error("Error deleting balance. Balance not found."))
@@ -92,8 +89,8 @@ class BalanceRepository {
         return result
     }
 
-    fun add(balance: Balance): LiveData<Resource<Balance>> {
-        val result: MutableLiveData<Resource<Balance>> = MutableLiveData()
+    fun add(balance: Balance): LiveData<Resource<Void>> {
+        val result: MutableLiveData<Resource<Void>> = MutableLiveData()
         result.postValue(Resource.Loading())
 
         scope.launch {
@@ -102,6 +99,7 @@ class BalanceRepository {
                     val response = client.balance(balance)
                     balanceDao.insert(response)
                     result.postValue(Resource.Success())
+                    balanceList.postValue(Resource.Success(balanceDao.get()))
                 }
 
             } catch (e: HttpException) {
@@ -123,8 +121,8 @@ class BalanceRepository {
         return result
     }
 
-    fun update(balance: Balance): LiveData<Resource<Balance>> {
-        val result: MutableLiveData<Resource<Balance>> = MutableLiveData()
+    fun update(balance: Balance): LiveData<Resource<Void>> {
+        val result: MutableLiveData<Resource<Void>> = MutableLiveData()
         result.postValue(Resource.Loading())
 
         scope.launch {
@@ -133,6 +131,7 @@ class BalanceRepository {
                     val response = client.balance(balance.id!!, balance)
                     balanceDao.update(response)
                     result.postValue(Resource.Success())
+                    balanceList.postValue(Resource.Success(balanceDao.get()))
                 }
 
             } catch (e: HttpException) {
@@ -155,12 +154,15 @@ class BalanceRepository {
     }
 
     fun refresh() {
+        balanceList.postValue(Resource.Loading())
+        
         scope.launch {
             try {
                 withContext(Dispatchers.IO) {
                     val response = client.balance()
                     balanceDao.deleteAndCreate(response)
                     prefs.balanceFetchDate = LocalDate.now().toEpochMilli()
+                    balanceList.postValue(Resource.Success(response))
                 }
             } catch (ex: Exception) {
                 println(ex)

@@ -2,7 +2,10 @@ package com.panosdim.flatman.ui.dialogs
 
 import android.os.Bundle
 import android.text.InputFilter
-import android.view.*
+import android.view.KeyEvent
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.Toast
@@ -10,6 +13,7 @@ import androidx.fragment.app.viewModels
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.datepicker.CalendarConstraints
 import com.google.android.material.datepicker.MaterialDatePicker
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.panosdim.flatman.R
 import com.panosdim.flatman.api.data.Resource
 import com.panosdim.flatman.databinding.DialogBalanceBinding
@@ -17,7 +21,6 @@ import com.panosdim.flatman.model.Balance
 import com.panosdim.flatman.model.Flat
 import com.panosdim.flatman.utils.*
 import com.panosdim.flatman.viewmodel.BalanceViewModel
-import com.panosdim.flatman.viewmodel.FlatViewModel
 import com.panosdim.flatman.viewmodel.LesseeViewModel
 import java.time.LocalDate
 
@@ -28,8 +31,8 @@ class BalanceDialog : BottomSheetDialogFragment() {
     private var selectedFlat: Flat? = null
     private val textWatcher = generateTextWatcher(::validateForm)
     private val viewModel: BalanceViewModel by viewModels(ownerProducer = { requireParentFragment() })
-    private val flatViewModel: FlatViewModel by viewModels(ownerProducer = { requireParentFragment() })
     private val lesseeViewModel: LesseeViewModel by viewModels(ownerProducer = { requireParentFragment() })
+    var flats: List<Flat> = mutableListOf()
 
 
     override fun onCreateView(
@@ -63,8 +66,6 @@ class BalanceDialog : BottomSheetDialogFragment() {
             resources.getStringArray(R.array.comments)
         )
         binding.balanceComment.setAdapter(adapter)
-        @Suppress("DEPRECATION")
-        this.dialog?.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
 
         binding.balanceDate.setOnClickListener {
             val date: LocalDate = binding.balanceDate.text.toString().toLocalDate()
@@ -98,30 +99,29 @@ class BalanceDialog : BottomSheetDialogFragment() {
         }
 
         binding.deleteBalance.setOnClickListener {
-            deleteBalance()
-        }
-
-        flatViewModel.getFlats().observe(viewLifecycleOwner) { resource ->
-            if (resource != null) {
-                when (resource) {
-                    is Resource.Success -> {
-                        val flatAdapter = resource.data?.let {
-                            ArrayAdapter(requireContext(), R.layout.list_item, it)
-                        }
-
-                        binding.flat.setAdapter(flatAdapter)
-                    }
-                    is Resource.Error -> {}
-                    is Resource.Loading -> {}
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(resources.getString(R.string.delete_balance_title))
+                .setMessage(resources.getString(R.string.delete_balance_supporting_text))
+                .setNegativeButton(resources.getString(R.string.decline)) { dialog, _ ->
+                    dialog.dismiss()
                 }
-            }
+                .setPositiveButton(resources.getString(R.string.accept)) { dialog, _ ->
+                    dialog.dismiss()
+                    deleteBalance()
+                }
+                .show()
         }
 
         binding.flat.setOnItemClickListener { parent, _, position, _ ->
             selectedFlat = (parent.getItemAtPosition(position) as Flat)
+            selectedFlat?.let {
+                val rent = lesseeViewModel.getMonthlyRent(it)
+                if (rent != null) {
+                    binding.balanceAmount.setText(rent.toString())
+                }
+            }
             validateForm()
         }
-
 
         return root
     }
@@ -134,6 +134,9 @@ class BalanceDialog : BottomSheetDialogFragment() {
     override fun onPause() {
         super.onPause()
         balance = null
+        // Workaround as there is a bug in AutoCompleteView filter setting
+        binding.flat.setText("", false)
+        selectedFlat = null
     }
 
     private fun deleteBalance() {
@@ -210,16 +213,20 @@ class BalanceDialog : BottomSheetDialogFragment() {
         // Check if we change something in the object
         if (balance.date == binding.balanceDate.text.toString().toSQLDateFormat() &&
             balance.amount == binding.balanceAmount.text.toString().toFloat() &&
-            balance.comment == binding.balanceComment.text.toString()
+            balance.comment == binding.balanceComment.text.toString() &&
+            balance.flatId == selectedFlat?.id!!
         ) {
             dismiss()
         } else {
             // Update Balance
-            balance.date = binding.balanceDate.text.toString().toSQLDateFormat()
-            balance.amount = binding.balanceAmount.text.toString().toFloat()
-            balance.comment = binding.balanceComment.text.toString()
+            val updatedBalance = balance.copy(
+                date = binding.balanceDate.text.toString().toSQLDateFormat(),
+                amount = binding.balanceAmount.text.toString().toFloat(),
+                comment = binding.balanceComment.text.toString(),
+                flatId = selectedFlat?.id!!,
+            )
 
-            viewModel.updateBalance(balance).observe(viewLifecycleOwner) { resource ->
+            viewModel.updateBalance(updatedBalance).observe(viewLifecycleOwner) { resource ->
                 if (resource != null) {
                     when (resource) {
                         is Resource.Success -> {
@@ -254,11 +261,13 @@ class BalanceDialog : BottomSheetDialogFragment() {
         val balanceAmount = binding.balanceAmount
         val balanceComment = binding.balanceComment
         val saveBalance = binding.saveBalance
+        val flat = binding.flat
 
         saveBalance.isEnabled = true
         balanceDate.error = null
         balanceAmount.error = null
         balanceComment.error = null
+        flat.error = null
 
         // Store values.
         val date = balanceDate.text.toString()
@@ -279,15 +288,24 @@ class BalanceDialog : BottomSheetDialogFragment() {
             balanceComment.error = getString(R.string.error_field_required)
             saveBalance.isEnabled = false
         }
+
+        if (selectedFlat == null) {
+            flat.error = getString(R.string.error_field_required)
+            saveBalance.isEnabled = false
+        }
     }
 
     private fun isFormValid(): Boolean {
         return binding.balanceDate.error == null &&
                 binding.balanceAmount.error == null &&
-                binding.balanceComment.error == null
+                binding.balanceComment.error == null &&
+                binding.flat.error == null
     }
 
-    fun showForm(balance: Balance?) {
+    fun showForm(balanceItm: Balance?) {
+        val adapter = ArrayAdapter(requireContext(), R.layout.list_item, flats)
+        binding.flat.setAdapter(adapter)
+
         binding.prgIndicator.visibility = View.GONE
         binding.saveBalance.isEnabled = true
         binding.deleteBalance.isEnabled = true
@@ -298,8 +316,10 @@ class BalanceDialog : BottomSheetDialogFragment() {
         binding.balanceDate.error = null
         binding.balanceAmount.error = null
         binding.balanceComment.error = null
+        binding.flat.error = null
 
-        if (balance == null) {
+        balance = balanceItm
+        if (balanceItm == null) {
             binding.balanceDate.addTextChangedListener(textWatcher)
             binding.balanceAmount.addTextChangedListener(textWatcher)
             binding.balanceComment.addTextChangedListener(textWatcher)
@@ -315,11 +335,13 @@ class BalanceDialog : BottomSheetDialogFragment() {
             binding.balanceDate.setText(today.toShowDateFormat())
             binding.deleteBalance.visibility = View.GONE
             binding.saveBalance.setText(R.string.save)
-            binding.balanceAmount.requestFocus()
+            binding.flat.requestFocus()
         } else {
-            binding.balanceDate.setText(LocalDate.parse(balance.date).toShowDateFormat())
-            binding.balanceAmount.setText(balance.amount.toString())
-            binding.balanceComment.setText(balance.comment)
+            binding.balanceDate.setText(LocalDate.parse(balanceItm.date).toShowDateFormat())
+            binding.balanceAmount.setText(balanceItm.amount.toString())
+            binding.balanceComment.setText(balanceItm.comment)
+            selectedFlat = flats.first { it.id == balanceItm.flatId }
+            binding.flat.setText(selectedFlat!!.name, false)
             binding.balanceDate.clearFocus()
             binding.balanceAmount.clearFocus()
             binding.balanceComment.clearFocus()

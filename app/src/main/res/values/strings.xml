@@ -59,4 +59,6 @@
     <string name="filter_lessees">Filter Lessees</string>
     <string name="set">Set</string>
     <string name="clear">Clear</string>
+    <string name="delete_balance_title">Delete Balance?</string>
+    <string name="delete_balance_supporting_text">If you delete the balance you will not be able to recover it.</string>
 </resources>

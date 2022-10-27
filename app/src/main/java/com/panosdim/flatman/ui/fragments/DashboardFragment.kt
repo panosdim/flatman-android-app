@@ -36,11 +36,33 @@ class DashboardFragment : Fragment() {
     ): View {
         _binding = FragmentDashboardBinding.inflate(inflater, container, false)
         val root: View = binding.root
-        val chart: LineChart = binding.chart
 
-        viewModel.balance.observe(viewLifecycleOwner) { bal ->
-            if (bal != null && bal.isNotEmpty()) {
-                updateDashboard(bal, chart)
+        viewModel.getBalance().observe(viewLifecycleOwner) { resource ->
+            if (resource != null) {
+                when (resource) {
+                    is Resource.Success -> {
+                        resource.data?.let {
+                            if (it.isNotEmpty()) {
+                                updateDashboard(it, binding.chart)
+                            }
+                        }
+                        binding.progressBar.visibility = View.GONE
+                        binding.llDashboard.visibility = View.VISIBLE
+                    }
+                    is Resource.Error -> {
+                        Toast.makeText(
+                            requireContext(),
+                            resource.message,
+                            Toast.LENGTH_LONG
+                        ).show()
+                        binding.progressBar.visibility = View.GONE
+                        binding.llDashboard.visibility = View.VISIBLE
+                    }
+                    is Resource.Loading -> {
+                        binding.progressBar.visibility = View.VISIBLE
+                        binding.llDashboard.visibility = View.GONE
+                    }
+                }
             }
         }
 
@@ -66,41 +88,6 @@ class DashboardFragment : Fragment() {
 
         chartData = calculateChartData(balList)
         initializeChart(chart)
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        viewModel.getAllBalance().observe(viewLifecycleOwner) { resource ->
-            if (resource != null) {
-                when (resource) {
-                    is Resource.Success -> {
-                        resource.data?.let {
-                            if (it.isNotEmpty()) {
-                                updateDashboard(it, binding.chart)
-                            }
-                        }
-                        binding.progressBar.visibility = View.GONE
-                        binding.llDashboard.visibility = View.VISIBLE
-
-                        viewModel.getAllBalance().removeObservers(viewLifecycleOwner)
-                    }
-                    is Resource.Error -> {
-                        Toast.makeText(
-                            requireContext(),
-                            resource.message,
-                            Toast.LENGTH_LONG
-                        ).show()
-                        binding.progressBar.visibility = View.GONE
-                        binding.llDashboard.visibility = View.VISIBLE
-                    }
-                    is Resource.Loading -> {
-                        binding.progressBar.visibility = View.VISIBLE
-                        binding.llDashboard.visibility = View.GONE
-                    }
-                }
-            }
-        }
     }
 
     override fun onDestroyView() {
@@ -154,14 +141,12 @@ class DashboardFragment : Fragment() {
 
     private fun calculateChartData(balance: List<Balance>): List<Entry> {
         val incomePerYear = balance.map {
-            it.date = it.date.split('-')[0]
-            it
+            it.copy(date = it.date.split('-')[0])
         }.groupingBy { item -> item.date }
             .fold(0f) { acc, el -> if (el.amount > 0) acc + el.amount else acc }
 
         val expensesPerYear = balance.map {
-            it.date = it.date.split('-')[0]
-            it
+            it.copy(date = it.date.split('-')[0])
         }.groupingBy { item -> item.date }
             .fold(0f) { acc, el -> if (el.amount < 0) acc + el.amount else acc }
 

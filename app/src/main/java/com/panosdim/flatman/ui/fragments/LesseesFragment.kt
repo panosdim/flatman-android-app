@@ -84,6 +84,7 @@ class LesseesFragment : Fragment() {
 
                                             res.data?.let { lessees ->
                                                 lesseesAdapter.submitList(lessees)
+                                                rvLessees.post { rvLessees.scrollToPosition(0) }
                                                 lesseesFilterDialog.lesseesAdapter = lesseesAdapter
                                             }
                                         }

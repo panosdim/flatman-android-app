@@ -42,6 +42,7 @@ class FlatsFragment : Fragment() {
                     is Resource.Success -> {
                         resource.data?.let { flats ->
                             flatsAdapter.submitList(flats)
+                            binding.rvFlats.post { binding.rvFlats.scrollToPosition(0) }
                         }
 
                         binding.progressBar.visibility = View.GONE

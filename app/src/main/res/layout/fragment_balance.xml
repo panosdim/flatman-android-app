@@ -36,4 +36,14 @@
         android:visibility="visible"
         android:text="@string/new_balance"
         app:icon="@drawable/ic_add" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/filterBalances"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:layout_margin="8dp"
+        app:srcCompat="@drawable/ic_filter"
+        style="?attr/floatingActionButtonStyle"
+        android:contentDescription="@string/filter_lessees" />
 </FrameLayout>

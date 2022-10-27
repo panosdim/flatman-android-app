@@ -144,6 +144,7 @@ class LesseeDialog : BottomSheetDialogFragment() {
 
     override fun onPause() {
         super.onPause()
+        lessee = null
         // Workaround as there is a bug in AutoCompleteView filter setting
         binding.flat.setText("", false)
         selectedFlat = null

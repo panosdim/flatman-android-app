@@ -7,20 +7,20 @@ import android.view.ViewGroup
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.chip.Chip
 import com.panosdim.flatman.R
-import com.panosdim.flatman.databinding.DialogLesseesFilterBinding
+import com.panosdim.flatman.databinding.DialogBalancesFilterBinding
+import com.panosdim.flatman.model.Balance
 import com.panosdim.flatman.model.Flat
-import com.panosdim.flatman.model.Lessee
-import com.panosdim.flatman.ui.adapters.LesseesAdapter
+import com.panosdim.flatman.ui.adapters.BalanceAdapter
 
-class LesseesFilterDialog :
+class BalancesFilterDialog :
     BottomSheetDialogFragment() {
-    private var _binding: DialogLesseesFilterBinding? = null
+    private var _binding: DialogBalancesFilterBinding? = null
     private val binding get() = _binding!!
     var flats: List<Flat> = mutableListOf()
-    private var lesseesList: List<Lessee>? = null
+    private var balancesList: List<Balance>? = null
     private var isFilterSet: Boolean = false
     private var filters: List<Int> = mutableListOf()
-    var lesseesAdapter: LesseesAdapter? = null
+    var balanceAdapter: BalanceAdapter? = null
         set(value) {
             field = value
             if (isFilterSet) {
@@ -32,7 +32,7 @@ class LesseesFilterDialog :
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = DialogLesseesFilterBinding.inflate(inflater, container, false)
+        _binding = DialogBalancesFilterBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
         flats.forEach { flat ->
@@ -44,21 +44,21 @@ class LesseesFilterDialog :
             chip.text = flat.name
             chip.id = flat.id!!
 
-            binding.lesseesFilterFlat.addView(chip)
+            binding.balancesFilterFlat.addView(chip)
         }
 
         binding.btnSetFilters.setOnClickListener {
             if (!isFilterSet) {
-                lesseesList = lesseesAdapter?.currentList?.map { it.copy() }?.toList()
+                balancesList = balanceAdapter?.currentList?.map { it.copy() }?.toList()
             }
-            filters = binding.lesseesFilterFlat.checkedChipIds
+            filters = binding.balancesFilterFlat.checkedChipIds
             isFilterSet = true
             filter()
 
             dismiss()
         }
 
-        binding.lesseesFilterFlat.setOnCheckedStateChangeListener { _, checkedIds ->
+        binding.balancesFilterFlat.setOnCheckedStateChangeListener { _, checkedIds ->
             binding.btnSetFilters.isEnabled = checkedIds.isNotEmpty()
         }
 
@@ -69,10 +69,10 @@ class LesseesFilterDialog :
             if (isFilterSet) {
                 isFilterSet = false
 
-                lesseesAdapter?.submitList(lesseesList)
-                lesseesList = listOf()
+                balanceAdapter?.submitList(balancesList)
+                balancesList = listOf()
                 filters = listOf()
-                binding.lesseesFilterFlat.clearCheck()
+                binding.balancesFilterFlat.clearCheck()
             }
 
             dismiss()
@@ -82,9 +82,9 @@ class LesseesFilterDialog :
     }
 
     private fun filter() {
-        val filteredList = lesseesList?.map { it.copy() }?.toMutableList()
+        val filteredList = balancesList?.map { it.copy() }?.toMutableList()
         filteredList?.retainAll { filters.contains(it.flatId) }
-        lesseesAdapter?.submitList(filteredList)
+        balanceAdapter?.submitList(filteredList)
     }
 
     override fun onDestroyView() {
@@ -93,6 +93,6 @@ class LesseesFilterDialog :
     }
 
     companion object {
-        const val TAG = "LesseesFilterDialog"
+        const val TAG = "BalancesFilterDialog"
     }
 }

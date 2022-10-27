@@ -1,6 +1,5 @@
 package com.panosdim.flatman.ui.adapters
 
-import android.content.res.Resources
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
@@ -12,7 +11,6 @@ import com.panosdim.flatman.model.Balance
 import com.panosdim.flatman.model.Flat
 import com.panosdim.flatman.utils.moneyFormat
 import com.panosdim.flatman.utils.resolveColorAttr
-import com.panosdim.flatman.utils.setBottomMargin
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -30,7 +28,6 @@ class BalanceAdapter(
         override fun areContentsTheSame(oldItem: Balance, newItem: Balance): Boolean {
             return oldItem == newItem
         }
-
     }) {
     private val dateFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
 
@@ -41,15 +38,6 @@ class BalanceAdapter(
     }
 
     override fun onBindViewHolder(holder: BalanceViewHolder, position: Int) {
-        if (position + 1 == itemCount) {
-            setBottomMargin(
-                holder.itemView,
-                (64 * Resources.getSystem().displayMetrics.density).toInt()
-            )
-        } else {
-            setBottomMargin(holder.itemView, 0)
-        }
-
         with(holder) {
             with(getItem(position)) {
                 binding.rowBalanceDate.text = dateFormatter.format(LocalDate.parse(date))

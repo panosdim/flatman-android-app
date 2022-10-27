@@ -13,6 +13,7 @@ import com.panosdim.flatman.databinding.FragmentBalanceBinding
 import com.panosdim.flatman.model.Balance
 import com.panosdim.flatman.ui.adapters.BalanceAdapter
 import com.panosdim.flatman.ui.dialogs.BalanceDialog
+import com.panosdim.flatman.ui.dialogs.BalancesFilterDialog
 import com.panosdim.flatman.viewmodel.BalanceViewModel
 import com.panosdim.flatman.viewmodel.FlatViewModel
 
@@ -28,6 +29,7 @@ class BalanceFragment : Fragment() {
             balanceItem
         )
     }
+    private val balancesFilterDialog: BalancesFilterDialog = BalancesFilterDialog()
 
     private fun balanceItemClicked(balance: Balance) {
         balanceDialog.showNow(childFragmentManager, BalanceDialog.TAG)
@@ -50,6 +52,10 @@ class BalanceFragment : Fragment() {
             balanceDialog.showForm(null)
         }
 
+        binding.filterBalances.setOnClickListener {
+            balancesFilterDialog.showNow(childFragmentManager, BalancesFilterDialog.TAG)
+        }
+
         flatViewModel.getFlats().observe(viewLifecycleOwner) { resource ->
             if (resource != null) {
                 when (resource) {
@@ -65,7 +71,7 @@ class BalanceFragment : Fragment() {
                             }
                             binding.rvBalance.adapter = balanceAdapter
                             balanceDialog.flats = resource.data
-//                            lesseesFilterDialog.flats = resource.data
+                            balancesFilterDialog.flats = resource.data
 
                             // Fetch Balance
                             viewModel.getBalance().observe(viewLifecycleOwner) { res ->
@@ -78,7 +84,7 @@ class BalanceFragment : Fragment() {
                                             res.data?.let { balances ->
                                                 balanceAdapter.submitList(balances.sortedByDescending { it.date })
                                                 rvBalance.post { rvBalance.scrollToPosition(0) }
-//                                                lesseesFilterDialog.lesseesAdapter = lesseesAdapter
+                                                balancesFilterDialog.balanceAdapter = balanceAdapter
                                             }
                                         }
                                         is Resource.Error -> {

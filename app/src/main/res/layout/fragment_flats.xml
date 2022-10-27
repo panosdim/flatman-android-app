@@ -14,6 +14,8 @@
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvFlats"
+            android:paddingBottom="64dp"
+            android:clipToPadding="false"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 

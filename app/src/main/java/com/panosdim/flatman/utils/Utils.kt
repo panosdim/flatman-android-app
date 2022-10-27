@@ -8,8 +8,6 @@ import android.os.Environment
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
-import android.view.View
-import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.content.pm.PackageInfoCompat
 import com.google.firebase.ktx.Firebase
@@ -138,18 +136,4 @@ fun isValidTIN(tin: String?): Boolean {
         total += digit shl tinLen - i - 1
     }
     return check == total % 11 % 10
-}
-
-/**
- * Sets a margin to the bottom of the view.
- *
- * @param view         The view to add the margin to.
- * @param bottomMargin The bottom margin to be added to the view.
- */
-fun setBottomMargin(view: View, bottomMargin: Int) {
-    if (view.layoutParams is ViewGroup.MarginLayoutParams) {
-        val params = view.layoutParams as ViewGroup.MarginLayoutParams
-        params.setMargins(params.leftMargin, params.topMargin, params.rightMargin, bottomMargin)
-        view.requestLayout()
-    }
 }

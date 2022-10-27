@@ -1,6 +1,5 @@
 package com.panosdim.flatman.ui.adapters
 
-import android.content.res.Resources
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
@@ -8,7 +7,6 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.panosdim.flatman.databinding.RowFlatBinding
 import com.panosdim.flatman.model.Flat
-import com.panosdim.flatman.utils.setBottomMargin
 
 
 class FlatsAdapter(private val clickListener: (Flat) -> Unit) :
@@ -29,15 +27,6 @@ class FlatsAdapter(private val clickListener: (Flat) -> Unit) :
     }
 
     override fun onBindViewHolder(holder: FlatViewHolder, position: Int) {
-        if (position + 1 == itemCount) {
-            setBottomMargin(
-                holder.itemView,
-                (64 * Resources.getSystem().displayMetrics.density).toInt()
-            )
-        } else {
-            setBottomMargin(holder.itemView, 0)
-        }
-
         with(holder) {
             with(getItem(position)) {
                 binding.rowFlatName.text = name

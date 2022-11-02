@@ -19,7 +19,7 @@ class LesseesFilterDialog :
     var flats: List<Flat> = mutableListOf()
     private var lesseesList: List<Lessee>? = null
     private var isFilterSet: Boolean = false
-    private var filters: List<Int> = mutableListOf()
+    private var flatId: Int? = null
     var lesseesAdapter: LesseesAdapter? = null
         set(value) {
             field = value
@@ -51,7 +51,7 @@ class LesseesFilterDialog :
             if (!isFilterSet) {
                 lesseesList = lesseesAdapter?.currentList?.map { it.copy() }?.toList()
             }
-            filters = binding.lesseesFilterFlat.checkedChipIds
+            flatId = binding.lesseesFilterFlat.checkedChipId
             isFilterSet = true
             filter()
 
@@ -71,7 +71,7 @@ class LesseesFilterDialog :
 
                 lesseesAdapter?.submitList(lesseesList)
                 lesseesList = listOf()
-                filters = listOf()
+                flatId = null
                 binding.lesseesFilterFlat.clearCheck()
             }
 
@@ -83,13 +83,25 @@ class LesseesFilterDialog :
 
     private fun filter() {
         val filteredList = lesseesList?.map { it.copy() }?.toMutableList()
-        filteredList?.retainAll { filters.contains(it.flatId) }
+        filteredList?.retainAll { flatId == it.flatId }
         lesseesAdapter?.submitList(filteredList)
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        // Restore filters that have been set
+        if (isFilterSet) {
+            binding.lesseesFilterFlat.clearCheck()
+            flatId?.let {
+                binding.lesseesFilterFlat.check(it)
+            }
+        }
     }
 
     companion object {

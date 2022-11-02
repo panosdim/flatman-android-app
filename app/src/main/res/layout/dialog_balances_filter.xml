@@ -25,14 +25,80 @@
                 android:text="@string/title_flats" />
 
             <HorizontalScrollView
-                android:paddingBottom="8dp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content">
 
                 <com.google.android.material.chip.ChipGroup
                     android:id="@+id/balancesFilterFlat"
+                    app:singleLine="true"
+                    app:singleSelection="true"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" />
+            </HorizontalScrollView>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/title_balance" />
+
+            <HorizontalScrollView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/balancesFilterBalance"
+                    app:singleLine="true"
+                    app:singleSelection="true"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/incomeChip"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:text="@string/income" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/expensesChip"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:text="@string/expenses" />
+
+                </com.google.android.material.chip.ChipGroup>
+            </HorizontalScrollView>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/date" />
+
+            <HorizontalScrollView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/balancesFilterDate"
+                    app:singleSelection="true"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/previousMonth"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:text="@string/previous_month" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/lastSixMonths"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:text="@string/last_six_months" />
+
+                </com.google.android.material.chip.ChipGroup>
             </HorizontalScrollView>
 
             <LinearLayout

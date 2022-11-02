@@ -83,8 +83,8 @@ class BalanceFragment : Fragment() {
 
                                             res.data?.let { balances ->
                                                 balanceAdapter.submitList(balances.sortedByDescending { it.date })
-                                                rvBalance.post { rvBalance.scrollToPosition(0) }
                                                 balancesFilterDialog.balanceAdapter = balanceAdapter
+                                                rvBalance.post { rvBalance.scrollToPosition(0) }
                                             }
                                         }
                                         is Resource.Error -> {

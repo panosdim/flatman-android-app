@@ -57,4 +57,7 @@
     <string name="clear">Clear</string>
     <string name="delete_balance_title">Delete Balance?</string>
     <string name="delete_balance_supporting_text">If you delete the balance you will not be able to recover it.</string>
+    <string name="this_month">This Month</string>
+    <string name="previous_month">Previous Month</string>
+    <string name="last_six_months">Last Six Months</string>
 </resources>

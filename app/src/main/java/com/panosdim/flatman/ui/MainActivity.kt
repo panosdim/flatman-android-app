@@ -1,10 +1,12 @@
 package com.panosdim.flatman.ui
 
+import android.annotation.SuppressLint
 import android.app.DownloadManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
@@ -32,7 +34,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var manager: DownloadManager
     private lateinit var onComplete: BroadcastReceiver
     private var client: Webservice = webservice
+    private val scope = CoroutineScope(Dispatchers.IO)
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -47,23 +51,27 @@ class MainActivity : AppCompatActivity() {
         manager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         onComplete = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
-                intent?.let {
-                    val referenceId = it.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-                    if (referenceId != -1L && referenceId == refId) {
-                        val apkUri = manager.getUriForDownloadedFile(refId)
-                        val installIntent = Intent(Intent.ACTION_VIEW)
-                        installIntent.setDataAndType(
-                            apkUri,
-                            "application/vnd.android.package-archive"
-                        )
-                        installIntent.flags =
-                            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
-                        startActivity(installIntent)
-                    }
+                val referenceId = intent!!.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
+                if (referenceId != -1L && referenceId == refId) {
+                    val apkUri = manager.getUriForDownloadedFile(refId)
+                    val installIntent = Intent(Intent.ACTION_VIEW)
+                    installIntent.setDataAndType(apkUri, "application/vnd.android.package-archive")
+                    installIntent.flags =
+                        Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    startActivity(installIntent)
                 }
+
             }
         }
-        registerReceiver(onComplete, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(
+                onComplete,
+                IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+                RECEIVER_EXPORTED
+            )
+        } else {
+            registerReceiver(onComplete, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
+        }
 
         if (auth.currentUser == null) {
             auth.signInAnonymously()
@@ -82,7 +90,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Check for new version
-        checkForNewVersion(this)
+        scope.launch {
+            checkForNewVersion(this@MainActivity)
+        }
     }
 
     override fun onResume() {
